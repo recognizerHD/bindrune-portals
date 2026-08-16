@@ -58,7 +58,7 @@ way you walked in, with a configurable fade.
 |---|---|
 | **R1** | Each portal carries a **clearance mask** — independent per-tier flags, not a single level. A site with Elder's + Moder's wards accepts copper and silver but still refuses iron. Nothing forces you up the ladder in order. |
 | **R2** | A site is defined by a **Wayfarer's Anchor**. Two separate relationships, and only the second is configurable: wards must stand within the anchor's radius (default 10 m), and the anchor grants its mask to the **nearest portal** within that radius. `PortalBinding = AllInRadius` instead grants it to every portal in range, for a base spread across two portals. |
-| **R3** | Only the **destination** is checked. `EnforceAtSource = false` by default. |
+| **R3** | Only the **destination** is checked — always, with no setting to change it. You need a ward at every site you want to send resources *to*; where you set out from is never asked about. |
 | **R4** | Every ward costs that biome boss's **trophy** plus a little of **the metal it unlocks**. You always earn the shortcut by making the haul the hard way once. |
 | **R5** | Trophies are farmable by re-summoning, so the ladder is a **cost curve, not a wall**. |
 | **R6** | Refusals **name the reason**: not "you cannot teleport with that" but `Iron cannot enter "Copper Mine" — no Bonemass Bindrune at that site.` |
@@ -128,7 +128,51 @@ dodge the fights.
 
 It also moves the clearance check. With a per-trip picker, choosing a destination and being told "no"
 are the same moment. Here you commit by walking, so a refusal lands at the threshold with no dialog to
-deliver it — which makes R6's named refusals and §7's approach-time warning matter *more*, not less.
+deliver it. The next two sections answer both problems: who is allowed to re-aim at all, and how a
+player learns a destination will refuse them.
+
+### Who may re-aim
+
+`ReaimPermission`, server-synced, **default `Anyone`**:
+
+| Value | Rule |
+|---|---|
+| `Anyone` | Any player may re-aim any portal. Default. |
+| `WardPermitted` | Inside a vanilla **ward**'s protected area, only players that ward permits. Outside any ward, anyone. |
+| `Builder` | Only the player who placed the portal. |
+| `Admin` | Admins only. |
+
+`WardPermitted` reuses the vanilla ward's existing permitted-players list rather than inventing a
+second access-control system — players already understand it, and it already means "this is my
+base, these are my crew". Note this is Valheim's ward, **not** a Bindrune ward stone: ours carry
+clearance, which is a different question and has no player list attached.
+
+Whether a portal's placer is recoverable at all decides if `Builder` is shippable; see §12.
+
+### Telling the player before they commit
+
+Two layers, and the first is the one that matters:
+
+1. **A blocked marker on the inventory slot.** Near a portal, any stack that the portal's *current
+   destination* will refuse gets a blocked overlay on its icon. You find out while packing, not after
+   walking — which is better than any doorway warning, because at that point you can still do
+   something about it.
+2. **A named message on entry.** If you walk in anyway, R6's refusal names the offending resource and
+   the missing ward rather than saying "you cannot teleport with that".
+
+Three constraints on the first layer, all of them load-bearing:
+
+- **Proximity-gated.** The overlay is live only within `CargoPreviewRange` of a portal, reading that
+  portal's target. Always-on would paint red across your ore for the entire game and train everyone
+  to ignore it.
+- **It reads the registry, not the far side's ZDO.** The destination is normally unloaded on this
+  client — see §6.
+- **It never touches item data.** The overlay is computed from the prefab→tier map against the
+  destination mask. Flipping `m_shared.m_teleportable` to drive a UI state would leak into tooltips
+  and every other mod, which is the failure mode §6 calls out.
+
+Where two portals are close together, "the portal you are near" resolves the same way an anchor picks
+its portal: nearest within range.
 
 ### Selector requirements
 
@@ -166,7 +210,8 @@ names are unverified; see §12.
 | **Stack** | BepInEx 5 + HarmonyX. Jotunn for custom pieces, localisation, config sync. The anchor and five wards are custom build pieces — exactly `PieceManager`'s job. |
 | **Where clearance lives** | An int bitmask on the anchor's ZDO, **mirrored onto every portal ZDO in radius** (`bindrune_mask`). The mirror is **not optional**: a traveling client can read the destination portal's ZDO but cannot see ward pieces 2 km away. |
 | **Who computes it** | The **server**. It holds every ZDO, so it recomputes a site's mask on ward place/destroy and on a slow sweep, then writes the portals. Clients never author a mask. This also self-heals staleness when a ward is destroyed while the site is unloaded. |
-| **Portal registry** | Server-authoritative list from `ZDOMan.GetPortals()`, pushed to clients on join and on change. |
+| **Portal registry** | Server-authoritative list from `ZDOMan.GetPortals()`, pushed to clients on join and on change. **Each record carries that portal's clearance mask**, not just name, id and position — see the row below for why. |
+| **Why the registry carries masks** | A client standing at A needs the mask of A's *target*, which is usually kilometres away and not in the client's ZDO set at all. The ZDO mirror alone cannot answer it. So the mask travels in the registry record, which is what makes both the travel gate and the inventory preview possible without loading the far side. |
 | **The check** | Prefix on the travel path: resolve destination → read mask → walk `Inventory.GetAllItems()` for `m_shared.m_teleportable == false` → allow, or refuse with a named reason. Suppress vanilla's `Player.IsTeleportable()` via a scoped context flag. |
 | **What not to do** | Do **not** flip `m_shared.m_teleportable` on shared item data to let ore through. It's shared state — it leaks into tooltips, other mods, and anything else that asks. Several existing portal mods take that shortcut and it's why they conflict. |
 | **Trust model** | Player inventories are client-side in Valheim, so cargo checks are client-trusting — same as vanilla. The server can authoritatively own **clearance**, never **cargo**. Put that in the readme: this is a rule system for a co-op server, not anti-cheat. |
@@ -207,9 +252,13 @@ player stood at that portal and cached with the portal record. Phase 3 nicety, n
 | # | Phase | Ships | Standalone? |
 |---|---|---|---|
 | 1 | **Destination selector** | Portal registry, server sync, the one-way target on the portal ZDO, and the map selector with keyboard *and* gamepad nav. | Yes — and it's the must-have. |
-| 2 | **Anchors & wards** | Six pieces, the mask, server recompute, the destination check, named refusals. | Yes. The mod's reason to exist. |
-| 3 | **Fusion & polish** | Clearance chips in the panel, cargo filter, portal rune tinting by tier, destination thumbnails. | Needs 1 + 2. |
+| 2 | **Anchors & wards** | Six pieces, the mask, server recompute, the destination check, named refusals on entry. | Yes. The mod's reason to exist. |
+| 3 | **Fusion & polish** | The blocked-cargo overlay on inventory icons, clearance chips in the selector, cargo filter, portal rune tinting by tier, destination thumbnails. | Needs 1 + 2. |
 | 4 | **Seamless transit** | Approach-time gating, rune curtain, preload, fade. Default off. | Optional — cut without regret if it fights the game. |
+
+Phase 2 is playable on the entry message alone, but it is the *worse* half of §5's two layers — you
+learn at the threshold instead of while packing. If Phase 3 slips, pull the overlay forward out of it
+rather than shipping Phase 2 as the long-term state.
 
 ---
 
@@ -222,6 +271,10 @@ player stood at that portal and cached with the portal record. Phase 3 nicety, n
 | Station or rewire? | **Rewire, selected on the map** (§5). A portal's destination belongs to the portal and applies to everyone; walk in to travel, interact to re-aim. Station is deferred to §13 and is not being built. |
 | Independent per-tier flags, or a strict ladder (tier 3 requires 1 + 2)? | **Independent flags.** `StrictLadder` opts into requiring the lower wards first. |
 | Anchor-and-radius, or bind each ward to one portal? | **Auto-bind to the nearest portal in range** (`PortalBinding = Nearest`), no manual binding UI. `AllInRadius` covers every portal at the site. |
+| Does the source ever matter? | **No — never, and there is no setting.** R3 rewritten to say so. |
+| Own the destination list, or build on XPortal (GPLv3)? | **Own it.** Inspiration only, no copied code, MIT preserved. §11 spells out where the line sits. |
+| Who may re-aim a portal? | **`ReaimPermission`, default `Anyone`**, with `WardPermitted` / `Builder` / `Admin` — see §5. |
+| How is a player warned *before* they commit? | **A blocked overlay on inventory icons near a portal**, plus R6's named message on entry — see §5. |
 
 One portal per site is what makes the binding default reasonable, and that survives the move to
 rewire: re-aiming reaches every destination from a single portal, so a site needs exactly one and
@@ -233,6 +286,14 @@ The caveat is contention: if re-aiming fights push players into building hubs af
 would charge a full ward set per portal in the hub. `AllInRadius` is the escape hatch, and that is
 now its main justification rather than the large-base case it was kept for.
 
+Dropping source enforcement outright, rather than shipping it off by default, is worth being precise
+about — because the two are not equivalent, and the difference *is* the mod. Checking the source too
+would mean an un-warded outpost could no longer send ore anywhere, since it has no ward of its own to
+authorise the departure. That kills the one-way outpost in §1: ore would need wards at both ends,
+the network would become symmetric, and "ore flows inward toward places you invested in" would just
+become "ward everything". A setting that can switch off the central mechanic is not a setting worth
+having.
+
 Explicit manual binding was rejected on cost: it needs a bind interaction, gamepad navigation for it,
 a stored ZDOID per ward, and dangling-reference handling when either end is destroyed while the chunk
 is unloaded. Auto-binding is recomputed from positions on the server's sweep, so it is self-healing
@@ -242,11 +303,7 @@ and stores nothing that can rot.
 
 | Question | Lean |
 |---|---|
-| Own the destination list, or build on XPortal (GPLv3, would bind the whole mod)? | **Own it — and this one got sharper.** §2 notes XPortal already solves registry + sync + panel + map ping *for the rewire model*, which is now exactly the model we ship, so the temptation to build on it is real. Taking it relicenses the whole assembly GPL-3.0. Writing our own one-way target and map selector is a few days; the clearance system is the actual value. Read XPortal for approach, copy nothing. |
-| Who may re-aim a portal? | New, and created by this decision. Anyone, the builder only, ward-gated, or admin-only. Contention is now shipped, so "anyone" needs to be a deliberate choice rather than a default nobody picked. |
-| How is a player warned *before* they commit? | New. You commit by walking, so there is no dialog to refuse you in. §7's approach-time gating was Phase 4 and optional; under rewire it is closer to core. At minimum the portal's own state should say where it points and whether your cargo will make it. |
-| Does the source ever matter? | Destination-only default, `EnforceAtSource` for the rest. |
-| Permanent wards, or an ongoing sink? | Permanent default, optional fuelled mode. |
+| Permanent wards, or an ongoing sink? | Permanent default, optional fuelled mode. Needs real play — it is the same lever as §10's balance risk, so decide them together. |
 
 ---
 
@@ -281,6 +338,36 @@ Two things constrain the choice:
    registry, the one-way target and the map selector ourselves is what keeps the licence choice in
    our hands, and it is a few days of work against permanently binding the assembly. You can still
    *read* XPortal for approach; copying code is what triggers it.
+
+   **Settled: own it. Inspiration only.** Copyright protects expression, not ideas — it does not
+   reach "any idea, procedure, process, system, method of operation, concept, principle, or
+   discovery" (17 U.S.C. §102(b)). GPL-3.0 is a copyright licence, so if nothing is copied it never
+   attaches. In practice:
+
+   | Free to take | Not free to take |
+   |---|---|
+   | The mechanic — a portal stores a target and syncs it to everyone | Source, whole or partial |
+   | The architecture — server-authoritative registry, client cache resynced on join | Copy-then-rename, which is still a derivative |
+   | That a problem exists and roughly how it is solved | Paraphrase close enough to be recognisably the same code |
+   | Facts about the **game's** API — that `ZDOMan.GetPortals()` exists is a fact about Iron Gate's code, not XPortal's expression | |
+
+   The working rule: read it to understand *what* and *why*, then close the file and write ours from
+   this document. The failure mode is not reading — it is having their implementation open in the
+   other window while typing the equivalent function, which drifts into transcription without anyone
+   deciding to.
+
+   Use our own ZDO keys (`bindrune_*`). The legal case against reusing theirs is weak — short
+   identifiers are barely copyrightable — but the functional one is decisive: two mods writing the
+   same key on the same world would corrupt each other.
+
+   We start from a good position here. This document was written from the problem, not reverse
+   engineered from their code, so the spec we implement against already exists independently — which
+   is most of what a formal clean-room process buys, without the ceremony.
+
+   Credit AnyPortal and XPortal as inspiration in the README at ship time. Not required if nothing is
+   copied; good manners, and free.
+
+   *(Not legal advice — this is the standard understanding in the modding ecosystem.)*
 2. **A code licence does not cover art or game assets.** Keep those separate:
    - **Never commit Valheim's DLLs, publicised assemblies, or ripped meshes/textures** to the repo.
      They're Iron Gate's, redistribution isn't yours to grant, and it's the fastest way to get a
@@ -319,6 +406,13 @@ on it:
   and not from this document.
 - The **in-game ward effect** reused for the build-mode range and connection indicators in §5 — the
   prefab name, the component that drives it, and whether its radius can be driven at runtime.
+- The **inventory slot UI** for the blocked-cargo overlay in §5: how `InventoryGui` / the inventory
+  grid builds and refreshes slot elements, and where a child image can be attached so it survives a
+  refresh. Vanilla already draws quality stars and durability bars on those elements, so the hook
+  exists — the names do not come from a decompiler yet.
+- The **vanilla ward** behind `ReaimPermission = WardPermitted` — the component, and the call that
+  answers "may this player use this thing here". Also whether a placed piece records who placed it,
+  which is what decides whether `Builder` is shippable at all.
 - **Plugin GUIDs of the conflicting mods** in §6. `Compat/ConflictDetector.cs` currently holds only
   the two confirmed from source (Valheim Plus `org.bepinex.plugins.valheim_plus`, XPortal
   `SpikeHimself.XPortal`); Advanced Portals, Progression Portals, Gate of Ore-thority and AnyPortal

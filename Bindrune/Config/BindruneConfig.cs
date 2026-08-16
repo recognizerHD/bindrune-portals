@@ -25,6 +25,27 @@ namespace Bindrune.Config
         AllInRadius,
     }
 
+    /// <summary>Who is allowed to change where a portal points. See DESIGN.md §5.</summary>
+    internal enum ReaimPermission
+    {
+        /// <summary>Any player may re-aim any portal.</summary>
+        Anyone,
+
+        /// <summary>
+        /// Inside a vanilla ward's protected area, only players that ward permits; outside any ward,
+        /// anyone. Reuses the ward's existing permitted-players list rather than inventing a second
+        /// access-control system. This is Valheim's ward, not a Bindrune ward stone — ours carry
+        /// clearance and have no player list.
+        /// </summary>
+        WardPermitted,
+
+        /// <summary>Only the player who placed the portal.</summary>
+        Builder,
+
+        /// <summary>Admins only.</summary>
+        Admin,
+    }
+
     /// <summary>Whether a built ward stays built. See DESIGN.md R7.</summary>
     internal enum WardMode
     {
@@ -48,7 +69,8 @@ namespace Bindrune.Config
     {
         private const string SectionTravel = "1 - Travel";
         private const string SectionClearance = "2 - Clearance";
-        private const string SectionCompatibility = "3 - Compatibility";
+        private const string SectionCargoPreview = "3 - Cargo preview";
+        private const string SectionCompatibility = "4 - Compatibility";
 
         // -- Travel ----------------------------------------------------------------------------
 
@@ -57,14 +79,22 @@ namespace Bindrune.Config
         // just a trap for whoever flips it.
         internal static ConfigEntry<bool> DiscoveredPortalsOnly { get; private set; }
         internal static ConfigEntry<bool> HidePortalNames { get; private set; }
+        internal static ConfigEntry<ReaimPermission> Reaim { get; private set; }
 
         // -- Clearance -------------------------------------------------------------------------
 
-        internal static ConfigEntry<bool> EnforceAtSource { get; private set; }
+        // There is no EnforceAtSource entry. Checking the source as well would mean an un-warded
+        // outpost could not send ore anywhere, which kills the one-way outpost the whole design is
+        // built on (R3). A setting that can switch off the central mechanic is not worth having.
         internal static ConfigEntry<bool> StrictLadder { get; private set; }
         internal static ConfigEntry<float> AnchorRadius { get; private set; }
         internal static ConfigEntry<PortalBinding> Binding { get; private set; }
         internal static ConfigEntry<WardMode> Wards { get; private set; }
+
+        // -- Cargo preview ---------------------------------------------------------------------
+
+        internal static ConfigEntry<bool> ShowBlockedCargoOverlay { get; private set; }
+        internal static ConfigEntry<float> CargoPreviewRange { get; private set; }
 
         // -- Compatibility ---------------------------------------------------------------------
 
@@ -85,15 +115,15 @@ namespace Bindrune.Config
                 false,
                 new ConfigDescription("Hide portal names in the map selector. Local to you."));
 
-            // -- Clearance ---------------------------------------------------------------------
+            Reaim = config.Bind(
+                SectionTravel,
+                "ReaimPermission",
+                ReaimPermission.Anyone,
+                Synced("Who may change where a portal points. Anyone: no restriction. WardPermitted: " +
+                       "inside a vanilla ward's area, only players that ward permits. Builder: only " +
+                       "whoever placed the portal. Admin: admins only."));
 
-            EnforceAtSource = config.Bind(
-                SectionClearance,
-                "EnforceAtSource",
-                false,
-                Synced("Also check the clearance of the portal you are leaving from. Off by default: " +
-                       "the whole design is that clearance belongs to the destination (R3), so ore " +
-                       "flows inward toward sites you have invested in."));
+            // -- Clearance ---------------------------------------------------------------------
 
             StrictLadder = config.Bind(
                 SectionClearance,
@@ -124,6 +154,24 @@ namespace Bindrune.Config
                 WardMode.Permanent,
                 Synced("Permanent: a built ward stands forever (R7). Fuelled: wards consume fuel to " +
                        "hold their clearance, so a large network keeps costing something."));
+
+            // -- Cargo preview -----------------------------------------------------------------
+
+            ShowBlockedCargoOverlay = config.Bind(
+                SectionCargoPreview,
+                "ShowBlockedCargoOverlay",
+                true,
+                new ConfigDescription("Mark inventory stacks the nearby portal's destination will refuse. " +
+                                      "Purely visual — it reads the tier map, never item data. Local to you."));
+
+            CargoPreviewRange = config.Bind(
+                SectionCargoPreview,
+                "CargoPreviewRange",
+                8f,
+                new ConfigDescription("How close to a portal the overlay switches on. Kept short on purpose: " +
+                                      "showing it everywhere would paint your ore red all game and teach you " +
+                                      "to ignore it. Local to you.",
+                    new AcceptableValueRange<float>(2f, 32f)));
 
             // -- Compatibility -----------------------------------------------------------------
 

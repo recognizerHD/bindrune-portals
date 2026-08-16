@@ -33,13 +33,19 @@ tested. Everything from `Portals/` onward is still unwritten.
 
 Violating any of these means rewriting a lot, so check against them before proposing a change:
 
-- **Clearance is read from the destination**, never the source (unless `EnforceAtSource` is on).
+- **Clearance is read from the destination, never the source.** No setting changes this. Checking the
+  source too would stop an un-warded outpost sending ore anywhere, which kills the one-way outpost
+  the whole design rests on.
+- **The portal registry carries each portal's mask.** A client at A needs A's *target's* mask, and
+  the target is normally unloaded on that client, so the ZDO mirror alone cannot answer it. This is
+  what makes both the travel gate and the inventory overlay possible.
 - **The server computes clearance masks; clients only read them.** Masks live on the anchor's ZDO and
   are *mirrored* onto every portal ZDO in radius — required, because a traveling client can read the
   destination portal's ZDO but cannot see ward pieces kilometres away.
 - **Never mutate `m_shared.m_teleportable`.** It's shared item data; changes leak into tooltips,
   other mods, and everything else that asks. Gate travel with a scoped context flag instead. This is
-  the single most common bug in existing portal mods.
+  the single most common bug in existing portal mods. The inventory overlay is the tempting place to
+  break this — it is a visual state computed from the tier map, and touches no item data.
 - **The blocked-item list is generated at runtime** by scanning `ObjectDB` for
   `m_teleportable == false`, mapped to tiers by config, with unknown items defaulting to the highest
   tier and being logged by name. Do not hardcode item lists.
