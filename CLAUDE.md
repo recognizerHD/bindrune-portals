@@ -19,7 +19,12 @@ architecture table, phases, open decisions. This file only covers how to work in
 
 ## Current state
 
-Design only — no code yet. Phase 1 (destination list) has not been started.
+Scaffold in place, no game behaviour yet. Phase 1 (destination list) has not been started.
+
+What exists: solution + project, the Jotunn/BepInEx build setup, `Plugin.cs` (BepInPlugin entry,
+Harmony bootstrap, network compatibility), the ServerSync'd config, and mod-conflict detection.
+None of it touches a game API, so all of it is verified — it compiles and the build guards were
+tested. Everything from `Portals/` onward is still unwritten.
 
 ## Non-negotiable invariants
 
@@ -55,14 +60,21 @@ list. If a name doesn't match, fix `DESIGN.md` in the same commit.
   install through an env var and keep those paths in `.gitignore`.
 - Prefer cloning existing in-game prefabs at runtime over shipping custom models.
 
-## Intended layout (when Phase 1 starts)
+## Layout
+
+`✓` exists, everything else is where the named concern goes when it's written.
 
 ```
-Bindrune.sln
+Bindrune.sln                ✓
+Directory.Build.props       ✓ game path + build guards; see "Build setup" below
+DoPrebuild.props            ✓ Jotunn's publicise/MMHOOK prebuild toggle
+Environment.props           ✗ gitignored, machine-local (copy from .example)
 Bindrune/
-  Bindrune.csproj
-  Plugin.cs                 # BepInPlugin entry, Harmony bootstrap
-  Config/                   # ServerSync'd config
+  Bindrune.csproj           ✓
+  BuildInfo.cs              ✓ GUID / name / version consts
+  Plugin.cs                 ✓ BepInPlugin entry, Harmony bootstrap
+  Config/                   ✓ ServerSync'd config
+  Compat/                   ✓ conflicting-mod detection
   Tiers/                    # ObjectDB scan, prefab -> tier map
   Portals/                  # registry + server sync
   Wards/                    # anchor + ward pieces, site resolution
@@ -74,10 +86,23 @@ Assets/                     # asset bundle, only if we ship original art
 DESIGN.md  CLAUDE.md  README.md  LICENSE
 ```
 
-Toolchain to confirm at setup time: BepInEx 5, HarmonyX, Jotunn (`JotunnLib` NuGet) for pieces /
-localisation / config sync, and `BepInEx.AssemblyPublicizer.MSBuild` for publicising game
-assemblies at build time. Target framework and Jotunn version should match whatever the current
-Jotunn project template ships with rather than being guessed.
+## Build setup — settled, don't re-litigate
+
+Confirmed against the Jotunn NuGet package and the JotunnModStub template, not guessed:
+
+- **`JotunnLib` 2.29.2**, target framework **`net48`**, `LangVersion` 10.
+- Jotunn's package supplies *every* reference — publicised game assemblies, BepInEx, `0Harmony`,
+  all UnityEngine modules. Do not add game or BepInEx `<Reference>` entries by hand.
+- **`BepInEx.AssemblyPublicizer.MSBuild` is not used.** Jotunn's own prebuild task publicises and
+  generates MMHOOK, gated by `ExecutePrebuild` in `DoPrebuild.props`. The earlier note in this file
+  calling for the publicizer package was wrong.
+- `VALHEIM_INSTALL` comes from an env var or `Environment.props`; Jotunn derives `BEPINEX_PATH` and
+  `VALHEIM_MANAGED` from it. `Directory.Build.props` imports it *before* NuGet's props, which is
+  load-bearing — Jotunn resolves reference HintPaths at evaluation time, so setting the path later
+  in the csproj silently yields references pointing at a guessed Steam path. It also defines
+  `SolutionDir` so building the csproj directly behaves like building the solution.
+
+Nothing in the build writes into the repo; the prebuild writes only into the game folder.
 
 ## Working notes
 

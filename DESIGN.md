@@ -3,7 +3,8 @@
 > A Valheim mod. Travel to any portal by name; what you may **carry** through is decided by the
 > ward stones standing at the **destination**, and every ward is bought with a boss trophy.
 
-Status: **design only, no code yet.** Draft 2.
+Status: **Draft 2.** Scaffold, config and conflict detection exist; no portal or ward behaviour yet.
+Phase 1 not started.
 
 ---
 
@@ -257,6 +258,11 @@ on it:
 - Boss trophy prefab names, especially **The Queen** and **Fader** — verify in `ObjectDB`.
 - The authoritative non-teleportable item list — get it from the `ObjectDB` scan, not from a wiki
   and not from this document.
+- **Plugin GUIDs of the conflicting mods** in §6. `Compat/ConflictDetector.cs` currently holds only
+  the two confirmed from source (Valheim Plus `org.bepinex.plugins.valheim_plus`, XPortal
+  `SpikeHimself.XPortal`); Advanced Portals, Progression Portals, Gate of Ore-thority and AnyPortal
+  are covered only by a `portal`/`teleport` keyword heuristic until someone reads their GUIDs off
+  the actual plugins. A wrong GUID in that list fails silently, which is why guesses stay out of it.
 
 Also worth reading directly: [XPortal's source](https://github.com/SpikeHimself/XPortal) (GPLv3 —
 read for approach, don't copy code unless you're licensing GPLv3), which uses ZDO keys

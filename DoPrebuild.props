@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Controls Jotunn's prebuild task, which publicises the game assemblies into
+  <VALHEIM_MANAGED>/publicized_assemblies and generates the MMHOOK assemblies.
+
+  Nothing in this repo compiles until that has run at least once, so it ships
+  enabled. It writes only into your game folder — never into this repo — and it
+  is safe to re-run. Once your publicised assemblies exist you can set this to
+  false for noticeably faster builds; set it back to true after a game update.
+-->
+<Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <ExecutePrebuild>true</ExecutePrebuild>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,58 @@
+# ---------------------------------------------------------------------------
+# Local machine paths. Environment.props holds YOUR Valheim install location
+# and must never be committed — see README "Building".
+# ---------------------------------------------------------------------------
+Environment.props
+
+# ---------------------------------------------------------------------------
+# Game files. NEVER commit Valheim assemblies, publicised assemblies, MMHOOK
+# output, or extracted assets — they belong to Iron Gate Studio and
+# redistributing them is not ours to grant. See DESIGN.md §11.
+# ---------------------------------------------------------------------------
+publicized_assemblies/
+MMHOOK/
+MMHOOK_*.dll
+assembly_*.dll
+Assembly-CSharp*.dll
+UnityEngine*.dll
+Unity.*.dll
+SoftReferenceableAssets.dll
+gui_framework.dll
+PlayFab*.dll
+Splatform*.dll
+com.rlabrecque.steamworks.net.dll
+0Harmony*.dll
+BepInEx*.dll
+Mono.*.dll
+MonoMod.*.dll
+libs/
+
+# ---------------------------------------------------------------------------
+# Build output
+# ---------------------------------------------------------------------------
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.rsuser
+mono_crash.*
+
+# ---------------------------------------------------------------------------
+# IDE / editor
+# ---------------------------------------------------------------------------
+.vs/
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+
+# ---------------------------------------------------------------------------
+# NuGet
+# ---------------------------------------------------------------------------
+packages/
+*.nupkg

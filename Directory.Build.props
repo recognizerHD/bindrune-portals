@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Imported by Microsoft.Common.props *before* NuGet's generated props, which is the
+  point of this file: Jotunn's build/Paths.props derives BEPINEX_PATH and
+  VALHEIM_MANAGED from VALHEIM_INSTALL and then resolves every game/BepInEx
+  <Reference> HintPath from them. Those are item definitions, so the values must be
+  in place before NuGet's props are imported — setting them later in the .csproj is
+  too late and yields references pointing at a guessed Steam path.
+
+  Defining SolutionDir here also makes `dotnet build Bindrune/Bindrune.csproj` behave
+  the same as building the solution: Jotunn's props import Environment.props and
+  DoPrebuild.props relative to $(SolutionDir), which MSBuild only sets for .sln builds.
+-->
+<Project>
+
+  <PropertyGroup>
+    <SolutionDir Condition="'$(SolutionDir)' == ''">$(MSBuildThisFileDirectory)</SolutionDir>
+  </PropertyGroup>
+
+  <!-- Machine-local game path. Gitignored; see Environment.props.example. -->
+  <Import Project="$(MSBuildThisFileDirectory)Environment.props"
+          Condition="Exists('$(MSBuildThisFileDirectory)Environment.props')" />
+
+  <PropertyGroup>
+    <Authors>recognizerHD</Authors>
+    <Copyright>Copyright (c) 2026 recognizerHD</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/recognizerHD/bindrune-portals</RepositoryUrl>
+    <NeutralLanguage>en</NeutralLanguage>
+  </PropertyGroup>
+
+  <!--
+    Fail with something readable instead of ~90 "assembly not found" errors when the
+    game path is missing or wrong.
+  -->
+  <Target Name="BindruneCheckValheimPath" BeforeTargets="BeforeBuild">
+    <Error Condition="'$(VALHEIM_INSTALL)' == '' Or !Exists('$(VALHEIM_INSTALL)')"
+           Text="VALHEIM_INSTALL is not set to an existing folder (currently: '$(VALHEIM_INSTALL)'). Copy Environment.props.example to Environment.props and set your Valheim install path, or set VALHEIM_INSTALL as an environment variable. See README.md." />
+    <Error Condition="'$(VALHEIM_MANAGED)' == '' Or !Exists('$(VALHEIM_MANAGED)')"
+           Text="Could not find the game's Managed folder under '$(VALHEIM_INSTALL)' (looked for Valheim_Data/Managed and valheim_Data/Managed). Check that VALHEIM_INSTALL points at the folder containing valheim.exe." />
+    <Error Condition="!Exists('$(BEPINEX_PATH)/core/BepInEx.dll')"
+           Text="BepInEx is not installed in '$(BEPINEX_PATH)'. Install BepInEx 5 into your Valheim folder and run the game once before building." />
+  </Target>
+
+</Project>

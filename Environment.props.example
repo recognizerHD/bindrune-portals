@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Copy this file to "Environment.props" (same folder) and point VALHEIM_INSTALL at
+  your own Valheim install. "Environment.props" is gitignored on purpose: it is a
+  machine-local path, and nothing under your game folder may be committed.
+
+  You can skip this file entirely by setting VALHEIM_INSTALL as an environment
+  variable instead — MSBuild reads environment variables as properties, and that
+  is the route CLAUDE.md prescribes.
+
+  Jotunn's build props derive BEPINEX_PATH and VALHEIM_MANAGED from VALHEIM_INSTALL,
+  so this is normally the only path you need to set.
+-->
+<Project ToolsVersion="Current" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <!-- Windows -->
+    <VALHEIM_INSTALL>C:\Program Files (x86)\Steam\steamapps\common\Valheim</VALHEIM_INSTALL>
+
+    <!-- Linux -->
+    <!-- <VALHEIM_INSTALL>$(HOME)/.steam/steam/steamapps/common/Valheim</VALHEIM_INSTALL> -->
+
+    <!-- macOS -->
+    <!-- <VALHEIM_INSTALL>$(HOME)/Library/Application Support/Steam/steamapps/common/Valheim/Contents/MacOS</VALHEIM_INSTALL> -->
+
+    <!--
+      Optional. If set and the folder exists, a successful build copies Bindrune.dll
+      straight into your plugins folder. Leave it unset to build without deploying.
+    -->
+    <MOD_DEPLOYPATH>$(VALHEIM_INSTALL)\BepInEx\plugins\Bindrune</MOD_DEPLOYPATH>
+  </PropertyGroup>
+</Project>
