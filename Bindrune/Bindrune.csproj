@@ -49,9 +49,13 @@
     <PackageReference Include="JotunnLib" Version="2.29.2" />
   </ItemGroup>
 
-  <!-- Optional convenience: drop the built plugin into BepInEx/plugins on success. -->
-  <Target Name="BindruneDeploy" AfterTargets="Build"
-          Condition="'$(MOD_DEPLOYPATH)' != '' And Exists('$(MOD_DEPLOYPATH)')">
+  <!--
+    Optional convenience: drop the built plugin into BepInEx/plugins on success.
+    Creates the folder if it isn't there — setting MOD_DEPLOYPATH is the statement of intent, and
+    silently skipping the copy because the folder doesn't exist yet reads as a broken build.
+  -->
+  <Target Name="BindruneDeploy" AfterTargets="Build" Condition="'$(MOD_DEPLOYPATH)' != ''">
+    <MakeDir Directories="$(MOD_DEPLOYPATH)" />
     <Message Importance="high" Text="Deploying $(TargetFileName) to $(MOD_DEPLOYPATH)" />
     <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(MOD_DEPLOYPATH)" />
     <Copy SourceFiles="$(TargetDir)$(TargetName).pdb" DestinationFolder="$(MOD_DEPLOYPATH)"
