@@ -288,6 +288,7 @@ rather than shipping Phase 2 as the long-term state.
 | Own the destination list, or build on XPortal (GPLv3)? | **Own it.** Inspiration only, no copied code, MIT preserved. §11 spells out where the line sits. |
 | Who may re-aim a portal? | **`ReaimPermission`, default `Anyone`**, with `GuardStonePermitted` / `Admin` — see §5. |
 | How is a player warned *before* they commit? | **A blocked overlay on inventory icons near a portal**, plus R6's named message on entry — see §5. |
+| Permanent bindrunes, or an ongoing sink? | **Permanent, with no fuelled mode at all.** The gate is the boss kill, not upkeep — see §10. |
 
 One portal per site is what makes the binding default reasonable, and that survives the move to
 rewire: re-aiming reaches every destination from a single portal, so a site needs exactly one and
@@ -312,8 +313,6 @@ a stored ZDOID per bindrune, and dangling-reference handling when either end is 
 is unloaded. Auto-binding is recomputed from positions on the server's sweep, so it is self-healing
 and stores nothing that can rot.
 
-| Permanent bindrunes, or an ongoing sink? | **Permanent, with no fuelled mode at all.** The gate is the boss kill, not upkeep — see §10. |
-
 ### Still open
 
 None of the structural questions. What is left is numbers, not shape: the ladder costs in §4 are
@@ -334,7 +333,7 @@ the trips back to earlier zones for resources are exactly the drudgery this mod 
 Charging rent on a network you already earned would put that friction back in the wrong place.
 
 So the cost curve is now the *only* brake, and it has to carry the whole load alone. That makes the
-metal component the lever — warding a site should read as a real project, not an errand. The numbers
+metal component the lever — building out a site should read as a real project, not an errand. The numbers
 in §4 are placeholders and this is the part that most needs real play.
 
 ---
