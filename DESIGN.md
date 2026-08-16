@@ -1,9 +1,9 @@
 # Bindrune — Design Spec
 
 > A Valheim mod. Travel to any portal by name; what you may **carry** through is decided by the
-> ward stones standing at the **destination**, and every ward is bought with a boss trophy.
+> bindrunes standing at the **destination**, and every bindrune is bought with a boss trophy.
 
-Status: **Draft 2.** Scaffold, config and conflict detection exist; no portal or ward behaviour yet.
+Status: **Draft 2.** Scaffold, config and conflict detection exist; no portal or bindrune behaviour yet.
 Phase 1 not started.
 
 ---
@@ -14,16 +14,29 @@ Two features, one system.
 
 1. **Any-portal travel.** Interact with a portal, pick any portal in the world off the map, and it
    points there — for everyone — until someone re-aims it. Walking in travels.
-2. **Destination clearance.** Each portal site has a clearance mask built out of physical ward
-   stones. When you travel, the game checks the mask of the portal you are *arriving at* against
+2. **Destination clearance.** Each portal site has a clearance mask built out of physical
+   bindrunes. When you travel, the game checks the mask of the portal you are *arriving at* against
    what you are carrying.
 
 The second one is the reason the mod exists. Build an Elder's Bindrune at your base and from then
 on *every* portal in the world can send copper, tin and bronze **to** your base — and none of them
-can receive it back until you go build a ward there too.
+can receive it back until you go build a bindrune there too.
 
 That asymmetry is the whole design: **ore flows inward** toward places you have invested in, and
 outposts stay cheap, disposable and one-way.
+
+### Words, used precisely
+
+The word *ward* is banned from this document, because Valheim already has a piece called Ward and the
+collision made everything ambiguous.
+
+| Term | Means |
+|---|---|
+| **Bindrune** | One of our five clearance pieces — Elder's, Bonemass's, Moder's, Yagluth's, Ashen. Built from a boss trophy plus the metal it unlocks. |
+| **Wayfarer's Anchor** | The tier-0 piece that defines a site. Not itself a bindrune: it opens nothing and only marks where a site is. |
+| **Site** | An anchor, the bindrunes standing around it, and the portal it binds to. |
+| **Clearance mask** | The per-tier flags a site grants, mirrored onto its portal. |
+| **Guard stone** | Valheim's *vanilla* piece — the one the game labels "Ward". Ours never touch it, except that `ReaimPermission` can read its permitted-players list (§5). |
 
 ---
 
@@ -56,26 +69,26 @@ way you walked in, with a configurable fade.
 
 | # | Rule |
 |---|---|
-| **R1** | Each portal carries a **clearance mask** — independent per-tier flags, not a single level. A site with Elder's + Moder's wards accepts copper and silver but still refuses iron. Nothing forces you up the ladder in order. |
-| **R2** | A site is defined by a **Wayfarer's Anchor**. Two separate relationships, and only the second is configurable: wards must stand within the anchor's radius (default 10 m), and the anchor grants its mask to the **nearest portal** within that radius. `PortalBinding = AllInRadius` instead grants it to every portal in range, for a base spread across two portals. |
-| **R3** | Only the **destination** is checked — always, with no setting to change it. You need a ward at every site you want to send resources *to*; where you set out from is never asked about. |
-| **R4** | Every ward costs that biome boss's **trophy** plus a little of **the metal it unlocks**. You always earn the shortcut by making the haul the hard way once. |
+| **R1** | Each portal carries a **clearance mask** — independent per-tier flags, not a single level. A site with Elder's + Moder's bindrunes accepts copper and silver but still refuses iron. Nothing forces you up the ladder in order. |
+| **R2** | A site is defined by a **Wayfarer's Anchor**. Two separate relationships, and only the second is configurable: bindrunes must stand within the anchor's radius (default 10 m), and the anchor grants its mask to the **nearest portal** within that radius. `PortalBinding = AllInRadius` instead grants it to every portal in range, for a base spread across two portals. |
+| **R3** | Only the **destination** is checked — always, with no setting to change it. You need a bindrune at every site you want to send resources *to*; where you set out from is never asked about. |
+| **R4** | Every bindrune costs that biome boss's **trophy** plus a little of **the metal it unlocks**. You always earn the shortcut by making the haul the hard way once. |
 | **R5** | Trophies are farmable by re-summoning, so the ladder is a **cost curve, not a wall**. |
 | **R6** | Refusals **name the reason**: not "you cannot teleport with that" but `Iron cannot enter "Copper Mine" — no Bonemass Bindrune at that site.` |
-| **R7** | Wards are **permanent** once built. Consumable-charge mode is a config option, not the default. |
+| **R7** | Bindrunes are **permanent** once built. There is no fuelled or consumable mode: the gate is the boss kill, not upkeep. |
 
 ---
 
-## 4. The ward ladder
+## 4. The bindrune ladder
 
 Costs are **placeholders** — they need real play to settle.
 
-| # | Ward | Cost | Opens | Why that boss |
+| # | Piece | Cost | Opens | Why that boss |
 |---|---|---|---|---|
-| 0 | **Wayfarer's Anchor** | Eikthyr trophy · 20 stone · 4 core wood | Nothing. Prerequisite for every ward at the site. | Gives Eikthyr a job; makes founding a warded site deliberate. |
+| 0 | **Wayfarer's Anchor** | Eikthyr trophy · 20 stone · 4 core wood | Nothing. Prerequisite for every bindrune at the site. | Gives Eikthyr a job; makes founding a site deliberate. |
 | 1 | **Elder's Bindrune** | Elder trophy · 10 bronze · 20 stone | Copper ore & bar, tin ore & bar, bronze | Black Forest metals. |
 | 2 | **Bonemass Bindrune** | Bonemass trophy · 10 iron · 20 stone | Iron scrap, iron | Swamp iron — the rule the idea started from. |
-| 3 | **Moder's Bindrune** | Moder trophy · 10 silver · 20 stone | Silver ore, silver, dragon eggs | Mountain hauls are the worst ones; this is the ward people want most. |
+| 3 | **Moder's Bindrune** | Moder trophy · 10 silver · 20 stone | Silver ore, silver, dragon eggs | Mountain hauls are the worst ones; this is the bindrune people want most. |
 | 4 | **Yagluth's Bindrune** | Yagluth trophy · 10 black metal · 20 stone | Black metal scrap, black metal | Plains fulings. |
 | 5 | **Ashen Bindrune** | Fader trophy · Queen trophy · 10 flametal · 20 stone | Flametal ore & bar, Ashlands blocked items | The Mistlands has no blocked resources, so the Queen folds in here rather than being skipped. |
 
@@ -122,9 +135,9 @@ you re-aim a portal instead of building another beside it.
 ### What it costs
 
 A target is shared world state, so re-aiming changes everyone's route — including someone mid-haul.
-That contention is a shipped property of the design now rather than something avoided, and it is why
-two questions in §9 stay open: who may re-aim a portal, and whether players rebuild hubs anyway to
-dodge the fights.
+That contention is a shipped property of the design now rather than something avoided. It is what
+`ReaimPermission` below exists to bound, and the reason `PortalBinding = AllInRadius` is kept: if
+re-aiming fights push players into building hubs after all, a per-portal charge would sting.
 
 It also moves the clearance check. With a per-trip picker, choosing a destination and being told "no"
 are the same moment. Here you commit by walking, so a refusal lands at the threshold with no dialog to
@@ -138,16 +151,16 @@ player learns a destination will refuse them.
 | Value | Rule |
 |---|---|
 | `Anyone` | Any player may re-aim any portal. Default. |
-| `WardPermitted` | Inside a vanilla **ward**'s protected area, only players that ward permits. Outside any ward, anyone. |
-| `Builder` | Only the player who placed the portal. |
+| `GuardStonePermitted` | Inside a **guard stone**'s protected area, only players it permits. Outside any guard stone, anyone. |
 | `Admin` | Admins only. |
 
-`WardPermitted` reuses the vanilla ward's existing permitted-players list rather than inventing a
-second access-control system — players already understand it, and it already means "this is my
-base, these are my crew". Note this is Valheim's ward, **not** a Bindrune ward stone: ours carry
-clearance, which is a different question and has no player list attached.
+`GuardStonePermitted` reuses the guard stone's existing permitted-players list rather than inventing
+a second access-control system — players already understand it, and it already means "this is my
+base, these are my crew". The guard stone is the vanilla piece the game labels *Ward*; it has nothing
+to do with bindrunes, which carry clearance and have no player list.
 
-Whether a portal's placer is recoverable at all decides if `Builder` is shippable; see §12.
+A `Builder` option was considered and dropped: it needs the portal to record who placed it, and that
+is not worth a shippable-or-not dependency for a rule two other values already cover.
 
 ### Telling the player before they commit
 
@@ -158,7 +171,7 @@ Two layers, and the first is the one that matters:
    walking — which is better than any doorway warning, because at that point you can still do
    something about it.
 2. **A named message on entry.** If you walk in anyway, R6's refusal names the offending resource and
-   the missing ward rather than saying "you cannot teleport with that".
+   the missing bindrune rather than saying "you cannot teleport with that".
 
 Three constraints on the first layer, all of them load-bearing:
 
@@ -192,12 +205,12 @@ its portal: nearest within range.
 Auto-binding removes the binding UI, but it also removes the player's certainty about what the game
 just decided for them. Two questions need answering without a menu:
 
-- **Range** — which wards count toward this anchor. Otherwise a ward planted 11 m out silently does
+- **Range** — which bindrunes count toward this anchor. Otherwise a bindrune planted 11 m out silently does
   nothing, and the player has no way to find out except by hauling ore and being refused.
 - **Connection** — which portal the anchor bound to. With two portals 30 m apart, nothing on screen
   says which one just became iron-capable.
 
-Reuse the existing in-game ward effect for both rather than authoring new art — that keeps this
+Reuse the existing in-game guard stone effect for both rather than authoring new art — that keeps this
 inside the §11 rule about cloning prefabs instead of shipping assets. The prefab and its component
 names are unverified; see §12.
 
@@ -207,16 +220,16 @@ names are unverified; see §12.
 
 | Concern | Approach |
 |---|---|
-| **Stack** | BepInEx 5 + HarmonyX. Jotunn for custom pieces, localisation, config sync. The anchor and five wards are custom build pieces — exactly `PieceManager`'s job. |
-| **Where clearance lives** | An int bitmask on the anchor's ZDO, **mirrored onto every portal ZDO in radius** (`bindrune_mask`). The mirror is **not optional**: a traveling client can read the destination portal's ZDO but cannot see ward pieces 2 km away. |
-| **Who computes it** | The **server**. It holds every ZDO, so it recomputes a site's mask on ward place/destroy and on a slow sweep, then writes the portals. Clients never author a mask. This also self-heals staleness when a ward is destroyed while the site is unloaded. |
+| **Stack** | BepInEx 5 + HarmonyX. Jotunn for custom pieces, localisation, config sync. The anchor and five bindrunes are custom build pieces — exactly `PieceManager`'s job. |
+| **Where clearance lives** | An int bitmask on the anchor's ZDO, **mirrored onto every portal ZDO in radius** (`bindrune_mask`). The mirror is **not optional**: a traveling client can read the destination portal's ZDO but cannot see bindrunes 2 km away. |
+| **Who computes it** | The **server**. It holds every ZDO, so it recomputes a site's mask on bindrune place/destroy and on a slow sweep, then writes the portals. Clients never author a mask. This also self-heals staleness when a bindrune is destroyed while the site is unloaded. |
 | **Portal registry** | Server-authoritative list from `ZDOMan.GetPortals()`, pushed to clients on join and on change. **Each record carries that portal's clearance mask**, not just name, id and position — see the row below for why. |
 | **Why the registry carries masks** | A client standing at A needs the mask of A's *target*, which is usually kilometres away and not in the client's ZDO set at all. The ZDO mirror alone cannot answer it. So the mask travels in the registry record, which is what makes both the travel gate and the inventory preview possible without loading the far side. |
 | **The check** | Prefix on the travel path: resolve destination → read mask → walk `Inventory.GetAllItems()` for `m_shared.m_teleportable == false` → allow, or refuse with a named reason. Suppress vanilla's `Player.IsTeleportable()` via a scoped context flag. |
 | **What not to do** | Do **not** flip `m_shared.m_teleportable` on shared item data to let ore through. It's shared state — it leaks into tooltips, other mods, and anything else that asks. Several existing portal mods take that shortcut and it's why they conflict. |
 | **Trust model** | Player inventories are client-side in Valheim, so cargo checks are client-trusting — same as vanilla. The server can authoritatively own **clearance**, never **cargo**. Put that in the readme: this is a rule system for a co-op server, not anti-cheat. |
 | **Install** | Server **and** every client. Config syncs from the server so tiers can't be edited locally. |
-| **Uninstalling** | Extra ZDO keys are harmless to a vanilla client. Custom pieces are not — remove the mod and anchors/wards vanish. Normal for custom-piece mods; warn anyway. |
+| **Uninstalling** | Extra ZDO keys are harmless to a vanilla client. Custom pieces are not — remove the mod and anchors and bindrunes vanish. Normal for custom-piece mods; warn anyway. |
 | **Known conflicts** | Anything that rewrites teleport rules: Valheim Plus, Advanced Portals, Progression Portals, Gate of Ore-thority, unrestricted-portal mods. Detect by GUID at startup and log a loud warning rather than fighting over patches. |
 
 ---
@@ -236,7 +249,7 @@ Fix — and it improves the base experience too:
 
 - Resolve the destination's mask when the player comes within ~4 m of an open portal, not at transit.
 - On refusal: flare the runes red, drop a rune-curtain collider across the doorway, HUD line naming
-  the item and the missing ward.
+  the item and the missing bindrune.
 - You get told **before** you commit, which beats vanilla's silent stone wall.
 
 Scope call: ship last, default off, treat as replaceable. Maintained mods already do preloading
@@ -252,7 +265,7 @@ player stood at that portal and cached with the portal record. Phase 3 nicety, n
 | # | Phase | Ships | Standalone? |
 |---|---|---|---|
 | 1 | **Destination selector** | Portal registry, server sync, the one-way target on the portal ZDO, and the map selector with keyboard *and* gamepad nav. | Yes — and it's the must-have. |
-| 2 | **Anchors & wards** | Six pieces, the mask, server recompute, the destination check, named refusals on entry. | Yes. The mod's reason to exist. |
+| 2 | **Anchors & bindrunes** | Six pieces, the mask, server recompute, the destination check, named refusals on entry. | Yes. The mod's reason to exist. |
 | 3 | **Fusion & polish** | The blocked-cargo overlay on inventory icons, clearance chips in the selector, cargo filter, portal rune tinting by tier, destination thumbnails. | Needs 1 + 2. |
 | 4 | **Seamless transit** | Approach-time gating, rune curtain, preload, fade. Default off. | Optional — cut without regret if it fights the game. |
 
@@ -269,11 +282,11 @@ rather than shipping Phase 2 as the long-term state.
 | Question | Decision |
 |---|---|
 | Station or rewire? | **Rewire, selected on the map** (§5). A portal's destination belongs to the portal and applies to everyone; walk in to travel, interact to re-aim. Station is deferred to §13 and is not being built. |
-| Independent per-tier flags, or a strict ladder (tier 3 requires 1 + 2)? | **Independent flags.** `StrictLadder` opts into requiring the lower wards first. |
-| Anchor-and-radius, or bind each ward to one portal? | **Auto-bind to the nearest portal in range** (`PortalBinding = Nearest`), no manual binding UI. `AllInRadius` covers every portal at the site. |
+| Independent per-tier flags, or a strict ladder (tier 3 requires 1 + 2)? | **Independent flags.** `StrictLadder` opts into requiring the lower bindrunes first. |
+| Anchor-and-radius, or bind each bindrune to one portal? | **Auto-bind to the nearest portal in range** (`PortalBinding = Nearest`), no manual binding UI. `AllInRadius` covers every portal at the site. |
 | Does the source ever matter? | **No — never, and there is no setting.** R3 rewritten to say so. |
 | Own the destination list, or build on XPortal (GPLv3)? | **Own it.** Inspiration only, no copied code, MIT preserved. §11 spells out where the line sits. |
-| Who may re-aim a portal? | **`ReaimPermission`, default `Anyone`**, with `WardPermitted` / `Builder` / `Admin` — see §5. |
+| Who may re-aim a portal? | **`ReaimPermission`, default `Anyone`**, with `GuardStonePermitted` / `Admin` — see §5. |
 | How is a player warned *before* they commit? | **A blocked overlay on inventory icons near a portal**, plus R6's named message on entry — see §5. |
 
 One portal per site is what makes the binding default reasonable, and that survives the move to
@@ -283,39 +296,46 @@ wins, deterministically — and gives back the "loading dock" pattern (two porta
 different clearance) that a site-wide radius cannot express.
 
 The caveat is contention: if re-aiming fights push players into building hubs after all, `Nearest`
-would charge a full ward set per portal in the hub. `AllInRadius` is the escape hatch, and that is
+would charge a full bindrune set per portal in the hub. `AllInRadius` is the escape hatch, and that is
 now its main justification rather than the large-base case it was kept for.
 
 Dropping source enforcement outright, rather than shipping it off by default, is worth being precise
 about — because the two are not equivalent, and the difference *is* the mod. Checking the source too
-would mean an un-warded outpost could no longer send ore anywhere, since it has no ward of its own to
-authorise the departure. That kills the one-way outpost in §1: ore would need wards at both ends,
-the network would become symmetric, and "ore flows inward toward places you invested in" would just
-become "ward everything". A setting that can switch off the central mechanic is not a setting worth
+would mean an outpost with no bindrunes could no longer send ore anywhere, since it has none of its
+own to authorise the departure. That kills the one-way outpost in §1: ore would need bindrunes at
+both ends, the network would become symmetric, and "ore flows inward toward places you invested in"
+would just become "build bindrunes everywhere". A setting that can switch off the central mechanic is not a setting worth
 having.
 
 Explicit manual binding was rejected on cost: it needs a bind interaction, gamepad navigation for it,
-a stored ZDOID per ward, and dangling-reference handling when either end is destroyed while the chunk
+a stored ZDOID per bindrune, and dangling-reference handling when either end is destroyed while the chunk
 is unloaded. Auto-binding is recomputed from positions on the server's sweep, so it is self-healing
 and stores nothing that can rot.
 
+| Permanent bindrunes, or an ongoing sink? | **Permanent, with no fuelled mode at all.** The gate is the boss kill, not upkeep — see §10. |
+
 ### Still open
 
-| Question | Lean |
-|---|---|
-| Permanent wards, or an ongoing sink? | Permanent default, optional fuelled mode. Needs real play — it is the same lever as §10's balance risk, so decide them together. |
+None of the structural questions. What is left is numbers, not shape: the ladder costs in §4 are
+placeholders and the anchor radius default is a guess, and both want real play rather than more
+argument. §10 is where that lands.
 
 ---
 
 ## 10. The main balance risk
 
 The cost curve is the only brake, and trophies are farmable. On a server that has killed Yagluth, a
-determined group can ward every site they own in an afternoon of boss re-summons — at which point
-Bindrune quietly becomes an unrestricted-portals mod with extra steps.
+determined group can build bindrunes at every site they own in an afternoon of boss re-summons — at
+which point Bindrune quietly becomes an unrestricted-portals mod with extra steps.
 
-Two honest answers: make the metal component large enough that warding a site is a real project,
-and offer the fuelled mode so the network keeps costing something. Neither needs deciding before
-Phase 2, but the ladder numbers are placeholders and this is the part that needs real play.
+**A fuelled mode was the other available answer, and it has been rejected** (R7). The gate is meant
+to be the boss kill, not upkeep: once you have beaten a biome you have moved on to the next one, and
+the trips back to earlier zones for resources are exactly the drudgery this mod exists to remove.
+Charging rent on a network you already earned would put that friction back in the wrong place.
+
+So the cost curve is now the *only* brake, and it has to carry the whole load alone. That makes the
+metal component the lever — warding a site should read as a real project, not an errand. The numbers
+in §4 are placeholders and this is the part that most needs real play.
 
 ---
 
@@ -374,7 +394,7 @@ Two things constrain the choice:
      repo taken down. Reference game assemblies from a local install path via an env var and
      `.gitignore` them.
    - Prefer **cloning existing in-game prefabs at runtime** (a rune stone, a standing stone) for the
-     anchor and wards over shipping custom models. Cheaper, always matches the art style, and there
+     anchor and bindrunes over shipping custom models. Cheaper, always matches the art style, and there
      is nothing to license.
    - If you do ship original models/icons in an asset bundle, license the art separately in the
      README — CC BY 4.0 is the usual pick — because MIT's "software" wording maps badly onto art.
@@ -404,15 +424,14 @@ on it:
 - Boss trophy prefab names, especially **The Queen** and **Fader** — verify in `ObjectDB`.
 - The authoritative non-teleportable item list — get it from the `ObjectDB` scan, not from a wiki
   and not from this document.
-- The **in-game ward effect** reused for the build-mode range and connection indicators in §5 — the
+- The **in-game guard stone effect** reused for the build-mode range and connection indicators in §5 — the
   prefab name, the component that drives it, and whether its radius can be driven at runtime.
 - The **inventory slot UI** for the blocked-cargo overlay in §5: how `InventoryGui` / the inventory
   grid builds and refreshes slot elements, and where a child image can be attached so it survives a
   refresh. Vanilla already draws quality stars and durability bars on those elements, so the hook
   exists — the names do not come from a decompiler yet.
-- The **vanilla ward** behind `ReaimPermission = WardPermitted` — the component, and the call that
-  answers "may this player use this thing here". Also whether a placed piece records who placed it,
-  which is what decides whether `Builder` is shippable at all.
+- The **guard stone** behind `ReaimPermission = GuardStonePermitted` — the component, and the call
+  that answers "may this player use this thing here".
 - **Plugin GUIDs of the conflicting mods** in §6. `Compat/ConflictDetector.cs` currently holds only
   the two confirmed from source (Valheim Plus `org.bepinex.plugins.valheim_plus`, XPortal
   `SpikeHimself.XPortal`); Advanced Portals, Progression Portals, Gate of Ore-thority and AnyPortal

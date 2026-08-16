@@ -9,14 +9,14 @@ Context for Claude Code sessions in this repo.
 1. **Any-portal travel.** Interact with a portal, pick any portal in the world off the map, and it
    points there for everyone until someone re-aims it. Walking in travels. Rewire, not per-player
    station mode — see DESIGN.md §5, and §13 for what was deferred.
-2. **Destination clearance.** Each portal site has a clearance mask built from physical ward stones
+2. **Destination clearance.** Each portal site has a clearance mask built from physical bindrunes
    bought with boss trophies. Travel is checked against the mask of the portal you're **arriving
    at**, not the one you're leaving — so ore flows *inward* toward places you've invested in, and
-   un-warded outposts are one-way.
+   outposts with no bindrunes are one-way.
 
 Feature 2 is the reason the mod exists. Feature 1 is table stakes (several mods already do it).
 
-**Read `DESIGN.md` first.** It is the authoritative spec: rules R1–R7, the ward ladder, the
+**Read `DESIGN.md` first.** It is the authoritative spec: rules R1–R7, the bindrune ladder, the
 architecture table, phases, and §9's settled-vs-open decisions. This file only covers how to work in
 the repo.
 
@@ -34,14 +34,14 @@ tested. Everything from `Portals/` onward is still unwritten.
 Violating any of these means rewriting a lot, so check against them before proposing a change:
 
 - **Clearance is read from the destination, never the source.** No setting changes this. Checking the
-  source too would stop an un-warded outpost sending ore anywhere, which kills the one-way outpost
+  source too would stop an outpost with no bindrunes sending ore anywhere, which kills the one-way outpost
   the whole design rests on.
 - **The portal registry carries each portal's mask.** A client at A needs A's *target's* mask, and
   the target is normally unloaded on that client, so the ZDO mirror alone cannot answer it. This is
   what makes both the travel gate and the inventory overlay possible.
 - **The server computes clearance masks; clients only read them.** Masks live on the anchor's ZDO and
   are *mirrored* onto every portal ZDO in radius — required, because a traveling client can read the
-  destination portal's ZDO but cannot see ward pieces kilometres away.
+  destination portal's ZDO but cannot see bindrunes kilometres away.
 - **Never mutate `m_shared.m_teleportable`.** It's shared item data; changes leak into tooltips,
   other mods, and everything else that asks. Gate travel with a scoped context flag instead. This is
   the single most common bug in existing portal mods. The inventory overlay is the tempting place to
@@ -52,8 +52,10 @@ Violating any of these means rewriting a lot, so check against them before propo
 - **Cargo checks are client-trusting** (player inventories are client-side in Valheim). The server
   owns *clearance*, never *cargo*. This is a co-op rule system, not anti-cheat — don't add
   complexity pretending otherwise.
-- **Gamepad navigation in the panel from the first commit.** Retrofitting Unity UI navigation is
-  miserable.
+- **Gamepad navigation in the map selector from the first commit.** Retrofitting Unity UI navigation
+  is miserable.
+- **The word *ward* is banned.** Valheim already has a piece called Ward, and the collision made the
+  spec ambiguous. Ours are **bindrunes**; the vanilla piece is the **guard stone**. See DESIGN.md §1.
 
 ## Before writing code that touches game internals
 
@@ -86,7 +88,7 @@ Bindrune/
   Compat/                   ✓ conflicting-mod detection
   Tiers/                    # ObjectDB scan, prefab -> tier map
   Portals/                  # registry + server sync
-  Wards/                    # anchor + ward pieces, site resolution
+  Bindrunes/                # anchor + bindrune pieces, site resolution
   Clearance/                # mask type, server recompute
   Travel/                   # the teleport gate + refusal messages
   UI/                       # destination panel (keyboard + gamepad)
@@ -118,4 +120,4 @@ Nothing in the build writes into the repo; the prebuild writes only into the gam
 - Suggested plugin GUID: `com.recognizerhd.bindrune`.
 - Detect conflicting mods by GUID at startup (Valheim Plus, Advanced Portals, Progression Portals,
   Gate of Ore-thority, unrestricted-portal mods) and log a loud warning — don't fight over patches.
-- Costs in the ward ladder are **placeholders**. Don't treat them as balanced.
+- Costs in the bindrune ladder are **placeholders**. Don't treat them as balanced.

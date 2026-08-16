@@ -1,17 +1,17 @@
 # bindrune-portals
 
-Pick any portal by name. What you may carry through is decided by the wards standing at the far end — and every ward is bought with a boss trophy.
+Pick any portal by name. What you may carry through is decided by the bindrunes standing at the far end — and every bindrune is bought with a boss trophy.
 
 **Bindrune** is a Valheim mod. Build an Elder's Bindrune at your base and from then on *every* portal
 in the world can send copper, tin and bronze **to** your base — and none of them can receive it back
-until you go build a ward there too. Ore flows inward, toward the places you have invested in.
+until you go build a bindrune there too. Ore flows inward, toward the places you have invested in.
 
-See [DESIGN.md](DESIGN.md) for the full spec: the rules, the ward ladder, the architecture, and the
+See [DESIGN.md](DESIGN.md) for the full spec: the rules, the bindrune ladder, the architecture, and the
 build order.
 
 ## Status
 
-Pre-alpha. The project scaffold, config and mod-conflict detection are in place; **no portal or ward
+Pre-alpha. The project scaffold, config and mod-conflict detection are in place; **no portal or bindrune
 behaviour is implemented yet.** Phase 1 (the destination list) has not started.
 
 ## Building
@@ -60,7 +60,7 @@ server, so clearance rules cannot be edited client-side.
 Cargo checks are client-trusting, because player inventories are client-side in Valheim — same as
 vanilla. This is a rule system for a co-op server, **not anti-cheat.**
 
-Removing the mod removes its custom pieces, so any anchors and wards you built will vanish. The extra
+Removing the mod removes its custom pieces, so any anchors and bindrunes you built will vanish. The extra
 ZDO keys it writes are harmless to a vanilla client.
 
 ## Licensing

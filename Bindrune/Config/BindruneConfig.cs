@@ -5,7 +5,7 @@ namespace Bindrune.Config
     /// <summary>
     /// Which portals an anchor grants its clearance to. See DESIGN.md R2.
     /// <para>
-    /// Only the anchor-to-portal step is configurable; wards always have to stand within the
+    /// Only the anchor-to-portal step is configurable; bindrunes always have to stand within the
     /// anchor's radius. Both options are resolved from position on the server's sweep, so neither
     /// stores a reference that can go stale when a portal is rebuilt.
     /// </para>
@@ -32,28 +32,15 @@ namespace Bindrune.Config
         Anyone,
 
         /// <summary>
-        /// Inside a vanilla ward's protected area, only players that ward permits; outside any ward,
-        /// anyone. Reuses the ward's existing permitted-players list rather than inventing a second
-        /// access-control system. This is Valheim's ward, not a Bindrune ward stone — ours carry
-        /// clearance and have no player list.
+        /// Inside a guard stone's protected area, only the players it permits; outside any guard
+        /// stone, anyone. Reuses the guard stone's existing permitted-players list rather than
+        /// inventing a second access-control system. The guard stone is the vanilla piece the game
+        /// labels "Ward" — it is unrelated to bindrunes, which carry clearance and have no player list.
         /// </summary>
-        WardPermitted,
-
-        /// <summary>Only the player who placed the portal.</summary>
-        Builder,
+        GuardStonePermitted,
 
         /// <summary>Admins only.</summary>
         Admin,
-    }
-
-    /// <summary>Whether a built ward stays built. See DESIGN.md R7.</summary>
-    internal enum WardMode
-    {
-        /// <summary>Built once, stands forever.</summary>
-        Permanent,
-
-        /// <summary>Consumes fuel to keep its clearance, so the network keeps costing something.</summary>
-        Fuelled,
     }
 
     /// <summary>
@@ -83,13 +70,12 @@ namespace Bindrune.Config
 
         // -- Clearance -------------------------------------------------------------------------
 
-        // There is no EnforceAtSource entry. Checking the source as well would mean an un-warded
-        // outpost could not send ore anywhere, which kills the one-way outpost the whole design is
+        // There is no EnforceAtSource entry. Checking the source as well would mean an outpost with
+        // no bindrunes could not send ore anywhere, which kills the one-way outpost the whole design is
         // built on (R3). A setting that can switch off the central mechanic is not worth having.
         internal static ConfigEntry<bool> StrictLadder { get; private set; }
         internal static ConfigEntry<float> AnchorRadius { get; private set; }
         internal static ConfigEntry<PortalBinding> Binding { get; private set; }
-        internal static ConfigEntry<WardMode> Wards { get; private set; }
 
         // -- Cargo preview ---------------------------------------------------------------------
 
@@ -119,9 +105,9 @@ namespace Bindrune.Config
                 SectionTravel,
                 "ReaimPermission",
                 ReaimPermission.Anyone,
-                Synced("Who may change where a portal points. Anyone: no restriction. WardPermitted: " +
-                       "inside a vanilla ward's area, only players that ward permits. Builder: only " +
-                       "whoever placed the portal. Admin: admins only."));
+                Synced("Who may change where a portal points. Anyone: no restriction. " +
+                       "GuardStonePermitted: inside a guard stone's area, only the players it permits. " +
+                       "Admin: admins only."));
 
             // -- Clearance ---------------------------------------------------------------------
 
@@ -129,14 +115,14 @@ namespace Bindrune.Config
                 SectionClearance,
                 "StrictLadder",
                 false,
-                Synced("Require the lower wards before a higher one can be built. Off by default: " +
+                Synced("Require the lower bindrunes before a higher one can be built. Off by default: " +
                        "per-tier flags are independent (R1), so a site can accept silver but refuse iron."));
 
             AnchorRadius = config.Bind(
                 SectionClearance,
                 "AnchorRadius",
                 10f,
-                Synced("Metres from a Wayfarer's Anchor within which ward stones count toward the site, " +
+                Synced("Metres from a Wayfarer's Anchor within which bindrunes count toward the site, " +
                        "and the range the anchor searches for the portal(s) it grants clearance to (R2).",
                     new AcceptableValueRange<float>(2f, 64f)));
 
@@ -147,13 +133,6 @@ namespace Bindrune.Config
                 Synced("Nearest: an anchor grants its clearance to the single closest portal in range. " +
                        "Re-aiming reaches everywhere from one portal, so a site only needs one. " +
                        "AllInRadius: every portal in range, for a base spread across more than one."));
-
-            Wards = config.Bind(
-                SectionClearance,
-                "WardMode",
-                WardMode.Permanent,
-                Synced("Permanent: a built ward stands forever (R7). Fuelled: wards consume fuel to " +
-                       "hold their clearance, so a large network keeps costing something."));
 
             // -- Cargo preview -----------------------------------------------------------------
 
