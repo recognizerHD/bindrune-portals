@@ -42,6 +42,11 @@ Violating any of these means rewriting a lot, so check against them before propo
 - **The server computes clearance masks; clients only read them.** Masks live on the anchor's ZDO and
   are *mirrored* onto every portal ZDO in radius — required, because a traveling client can read the
   destination portal's ZDO but cannot see bindrunes kilometres away.
+- **Never read or write a private game member directly.** Jotunn's publicised assemblies make
+  `portal.m_nview` compile, but the real assembly is loaded at runtime and this game build's Mono
+  throws `FieldAccessException` on every call — with no build-time warning. Patch methods take
+  Harmony's `___fieldName` parameter; other callers use a cached `AccessTools.FieldRefAccess`. See
+  DESIGN.md §12.
 - **Never mutate `m_shared.m_teleportable`.** It's shared item data; changes leak into tooltips,
   other mods, and everything else that asks. Gate travel with a scoped context flag instead. This is
   the single most common bug in existing portal mods. The inventory overlay is the tempting place to
@@ -59,9 +64,14 @@ Violating any of these means rewriting a lot, so check against them before propo
 
 ## Before writing code that touches game internals
 
-API names in `DESIGN.md` came from other mods' sources and recollection, **not** from the current
-game assemblies. Verify in a decompiler before building on any of them — see DESIGN.md §12 for the
-list. If a name doesn't match, fix `DESIGN.md` in the same commit.
+DESIGN.md §12 is split into **verified** and **still unverified**. The verified half was read off
+`assembly_valheim.dll` with Mono.Cecil and can be built on directly. The unverified half needs the
+game running (`ObjectDB` contents, prefab names, UI internals) — check those before use. If anything
+doesn't match, fix `DESIGN.md` in the same commit.
+
+Two verified facts worth knowing before you touch portals at all: the vanilla destination is a ZDO
+*connection*, not the tag; and the server rebuilds every one of those connections from tag matches
+every five seconds, so our one-way target has to live in our own key.
 
 ## Licensing rules for this repo
 

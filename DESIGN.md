@@ -223,9 +223,10 @@ names are unverified; see §12.
 | **Stack** | BepInEx 5 + HarmonyX. Jotunn for custom pieces, localisation, config sync. The anchor and five bindrunes are custom build pieces — exactly `PieceManager`'s job. |
 | **Where clearance lives** | An int bitmask on the anchor's ZDO, **mirrored onto every portal ZDO in radius** (`bindrune_mask`). The mirror is **not optional**: a traveling client can read the destination portal's ZDO but cannot see bindrunes 2 km away. |
 | **Who computes it** | The **server**. It holds every ZDO, so it recomputes a site's mask on bindrune place/destroy and on a slow sweep, then writes the portals. Clients never author a mask. This also self-heals staleness when a bindrune is destroyed while the site is unloaded. |
-| **Portal registry** | Server-authoritative list from `ZDOMan.GetPortals()`, pushed to clients on join and on change. **Each record carries that portal's clearance mask**, not just name, id and position — see the row below for why. |
+| **Portal registry** | Server-authoritative list from `ZDOMan.GetPortals()`, pushed to clients on join and on change. **Each record carries that portal's clearance mask**, not just name, id and position — see the row below for why. `GetPortals()` hands back the live list, so read it and never mutate it. |
+| **Where the target lives** | Our own `bindrune_target` ZDOID key on the portal's ZDO, with a prefix on `TeleportWorld.Teleport` preferring it over the vanilla destination. **Not** the vanilla `ConnectionType.Portal` connection: the server rebuilds those from tag matches every 5 seconds and would erase a one-way target almost immediately (§12). Leaving that pass alone is also what gives §5's vanilla-tag fallback for free — a portal we never re-aimed still pairs the way it always did. |
 | **Why the registry carries masks** | A client standing at A needs the mask of A's *target*, which is usually kilometres away and not in the client's ZDO set at all. The ZDO mirror alone cannot answer it. So the mask travels in the registry record, which is what makes both the travel gate and the inventory preview possible without loading the far side. |
-| **The check** | Prefix on the travel path: resolve destination → read mask → walk `Inventory.GetAllItems()` for `m_shared.m_teleportable == false` → allow, or refuse with a named reason. Suppress vanilla's `Player.IsTeleportable()` via a scoped context flag. |
+| **The check** | Prefix on `TeleportWorld.Teleport(Player)`: resolve destination → read mask → walk `Inventory.GetAllItems()` for `m_shared.m_teleportable == false` → allow, or refuse with a named reason through `Character.Message`. Suppress vanilla's `Humanoid.IsTeleportable()` via a scoped context flag, and honour the portal's own `m_allowAllItems`. |
 | **What not to do** | Do **not** flip `m_shared.m_teleportable` on shared item data to let ore through. It's shared state — it leaks into tooltips, other mods, and anything else that asks. Several existing portal mods take that shortcut and it's why they conflict. |
 | **Trust model** | Player inventories are client-side in Valheim, so cargo checks are client-trusting — same as vanilla. The server can authoritatively own **clearance**, never **cargo**. Put that in the readme: this is a rule system for a co-op server, not anti-cheat. |
 | **Install** | Server **and** every client. Config syncs from the server so tiers can't be edited locally. |
@@ -406,31 +407,112 @@ common licensing mistake in this ecosystem.
 
 ---
 
-## 12. Facts to verify before trusting them
+## 12. Game API — verified and still unverified
 
-Every API name below came from mod sources and recollection, **not** from reading the current game
-assemblies. Confirm each in a decompiler (ILSpy / dnSpy on `assembly_valheim.dll`) before building
-on it:
+Everything here originally came from mod sources and recollection. The first half has since been read
+off the shipped assemblies; the second half still hasn't.
 
-- `TeleportWorld` — the portal component. Method names and signature of its teleport entry point,
-  `Interact`, `GetHoverText`, `HaveTarget`, `TargetFound`, `GetConnectedPortal`.
-- `Player.IsTeleportable()`, `Inventory.IsTeleportable()`, `Inventory.GetAllItems()`,
-  `ItemDrop.ItemData.m_shared.m_teleportable`, `Player.TeleportTo(...)`.
-- `ZDOMan.GetPortals()` — confirmed present via XPortal's source; confirm the signature and whether
-  it's server-only.
-- `Game.ConnectPortals()` — the server-side tag-matching pass (relevant only in rewire mode).
-- ZDO custom-field API (`Set`/`GetInt` and how keys are hashed in the current version).
+### Verified
+
+Read from `assembly_valheim.dll` at game build **5.4.23.2+3** (Aug 2026) with Mono.Cecil. Anything
+below is what the game actually contains, not what the spec assumed.
+
+**`TeleportWorld`** — fields `m_activationRange`, `m_exitDistance`, `m_allowAllItems`, `m_proximityRoot`;
+methods `GetHoverText()`, `GetHoverName()`, `Interact(Humanoid, bool, bool)`, `UseItem(Humanoid, ItemData)`,
+`Teleport(Player)`, `GetText()` / `SetText(string)` (it is a `TextReceiver`), and private
+`HaveTarget()`, `TargetFound()`, `UpdatePortal()`, `SetConnectedPortal(ZDOID)`, `RPC_SetConnected`,
+`GetTagSignature(out string tagRaw, out string authorId)`.
+
+- **`GetConnectedPortal` does not exist.** It was never a method; earlier drafts invented it.
+- `Teleport(Player)` is the travel entry point, and it is where the checks live: `GlobalKeys.NoPortals`,
+  then `GlobalKeys.NoBossPortals`, then — unless the portal's own `m_allowAllItems` is set —
+  `Humanoid.IsTeleportable()`, refusing with `Character.Message(MessageHud.MessageType.Center, "$msg_noteleport")`.
+  That last branch is the one **R6** replaces with a named reason.
+- `Interact` gates on `PrivateArea.CheckAccess(transform.position, 0f, flash: true, wardCheck: false)`
+  and then opens `TextInput.RequestText(this, "$piece_portal_tag", 10)`. That `RequestText` call is
+  precisely what the §5 map selector replaces.
+
+**The destination is a ZDO *connection*, not a tag lookup.** `Teleport` resolves it as
+`zdo.GetConnectionZDOID(ZDOExtraData.ConnectionType.Portal)` → `ZDOMan.GetZDO(...)` → position/rotation →
+`Character.TeleportTo(pos, rot, distantTeleport: true)`. `TargetFound()` calls `ZDOMan.RequestZDO(id)`
+when the destination ZDO isn't loaded locally — the precedent for reaching a portal kilometres away.
+
+**`Game.ConnectPortals()` will tear down anything we write into that connection.** It runs on the
+server only (`Game.Start` starts `ConnectPortalsCoroutine` behind `ZNet.instance.IsServer()`) and
+repeats **every 5 seconds**. Two passes:
+
+1. For every portal with a connection: if the target ZDO is gone, **or the target's `ZDOVars.s_tag`
+   differs from this portal's**, clear the connection.
+2. For every unconnected portal: find a random unconnected portal with the same tag and connect
+   **both ends** to each other.
+
+So the vanilla connection is by construction symmetric and tag-derived, and a one-way target written
+into it would survive at most five seconds. §6 records the consequence: our target lives in our own
+ZDO key, `Teleport` is patched to prefer it, and vanilla's pass is left running untouched — which is
+what makes "vanilla tag pairing as the fallback" in §5 fall out for free rather than needing code.
+
+`ZDOMan.ConvertPortals()` migrates pre-connection saves off a legacy `ZDOVars.s_toRemoveTarget` ZDO
+key. That key is dead; don't reuse the name or the pattern.
+
+**Teleportability** — `Player.IsTeleportable()` **does not exist**. It is `Humanoid.IsTeleportable()`,
+which forwards to `Inventory.IsTeleportable()`, which returns true immediately if
+`GlobalKeys.TeleportAll` is set and otherwise scans `m_inventory` for
+`ItemDrop.ItemData.m_shared.m_teleportable == false`. `Inventory.GetAllItems()` and
+`Player.TeleportTo(Vector3, Quaternion, bool)` both exist as assumed.
+
+**`ZDOMan.GetPortals()`** — public instance method on `ZDOMan.instance`, returning `List<ZDO>`. It
+returns the **live `m_portalObjects` list, not a copy**; read it, never mutate it. Server-side
+population, consistent with the server-authoritative registry in §6.
+
+**ZDO custom fields** — `Set(string, ZDOID)` / `GetZDOID(string)` / `RemoveZDOID(string)`, with
+hash-pair overloads via the cacheable `ZDO.GetHashZDOID(string)`; ints via `Set(string, int)` /
+`GetInt(string, int)`. String keys hash through `StringExtensionMethods.GetStableHashCode` in
+`assembly_utils`. Vanilla caches its own hashes as statics on `ZDOVars` (`s_tag`, `s_tagauthor`, …);
+ours do the same with `bindrune_` names.
+
+**`PrivateArea.CheckAccess(Vector3 point, float radius, bool flash, bool wardCheck)`** — public
+static, and the call behind `ReaimPermission = GuardStonePermitted`. Vanilla already gates portal
+interaction on it, so that setting is mostly a matter of not weakening what is already there.
+
+**Publicised assemblies are a compile-time fiction, and this game build enforces that.** Jotunn's
+prebuild publicises the game assemblies and every reference resolves against those, so
+`portal.m_nview` compiles without complaint. At runtime the *real* `assembly_valheim.dll` is loaded,
+the field is private again, and this build's Mono raises the access check:
+
+```
+FieldAccessException: Field `TeleportWorld:m_nview' is inaccessible from method
+`Bindrune.Patches.TeleportWorldPatches:HaveOurTarget (TeleportWorld,bool&)'
+```
+
+It throws on every call, and a field read from a per-frame path such as `GetHoverText` produces five
+figures of log spam in a couple of minutes. Nothing warns at build time, so the rule has to be held
+by hand: **never read or write a private game member directly.** Patch methods take Harmony's
+`___fieldName` injected parameter; everything else goes through a cached
+`AccessTools.FieldRefAccess`, which is emitted once and costs about what the field access would have.
+Public members — and most of what we need is public — are fine as they are.
+
+Two things the game has grown that the spec didn't know about:
+
+- **`TeleportWorld.m_allowAllItems`** — a per-prefab flag that skips the teleportable check entirely.
+  Our gate has to respect it or we will refuse cargo at a portal the base game lets through.
+- **`ZDOVars.s_tagauthor`** — vanilla now records who set a portal's tag. The `Builder` value dropped
+  from `ReaimPermission` in §5 was dropped because nothing recorded the placer; this records the
+  *tagger*, which is close but not the same thing. Noted, not reopened.
+
+### Still unverified
+
+These need the game running or the asset database loaded, so the assemblies can't answer them:
+
 - Boss trophy prefab names, especially **The Queen** and **Fader** — verify in `ObjectDB`.
-- The authoritative non-teleportable item list — get it from the `ObjectDB` scan, not from a wiki
+- The authoritative non-teleportable item list — from the `ObjectDB` scan at runtime, not from a wiki
   and not from this document.
-- The **in-game guard stone effect** reused for the build-mode range and connection indicators in §5 — the
-  prefab name, the component that drives it, and whether its radius can be driven at runtime.
+- The **in-game guard stone effect** reused for the build-mode range and connection indicators in §5 —
+  the prefab name, the component that drives it, and whether its radius can be driven at runtime.
 - The **inventory slot UI** for the blocked-cargo overlay in §5: how `InventoryGui` / the inventory
   grid builds and refreshes slot elements, and where a child image can be attached so it survives a
   refresh. Vanilla already draws quality stars and durability bars on those elements, so the hook
-  exists — the names do not come from a decompiler yet.
-- The **guard stone** behind `ReaimPermission = GuardStonePermitted` — the component, and the call
-  that answers "may this player use this thing here".
+  exists.
+- Which vanilla prefabs ship with `m_allowAllItems` set.
 - **Plugin GUIDs of the conflicting mods** in §6. `Compat/ConflictDetector.cs` currently holds only
   the two confirmed from source (Valheim Plus `org.bepinex.plugins.valheim_plus`, XPortal
   `SpikeHimself.XPortal`); Advanced Portals, Progression Portals, Gate of Ore-thority and AnyPortal
