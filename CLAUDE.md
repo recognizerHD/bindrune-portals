@@ -15,7 +15,8 @@ Context for Claude Code sessions in this repo.
 Feature 2 is the reason the mod exists. Feature 1 is table stakes (several mods already do it).
 
 **Read `DESIGN.md` first.** It is the authoritative spec: rules R1–R7, the ward ladder, the
-architecture table, phases, open decisions. This file only covers how to work in the repo.
+architecture table, phases, and §9's settled-vs-open decisions. This file only covers how to work in
+the repo.
 
 ## Current state
 

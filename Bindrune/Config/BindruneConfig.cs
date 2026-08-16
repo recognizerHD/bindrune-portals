@@ -18,6 +18,29 @@ namespace Bindrune.Config
         Rewire,
     }
 
+    /// <summary>
+    /// Which portals an anchor grants its clearance to. See DESIGN.md R2.
+    /// <para>
+    /// Only the anchor-to-portal step is configurable; wards always have to stand within the
+    /// anchor's radius. Both options are resolved from position on the server's sweep, so neither
+    /// stores a reference that can go stale when a portal is rebuilt.
+    /// </para>
+    /// </summary>
+    internal enum PortalBinding
+    {
+        /// <summary>
+        /// The single closest portal within the anchor's radius. Under station mode a site only ever
+        /// needs one portal, so there is nothing to disambiguate — and two portals at one location
+        /// can carry different clearance.
+        /// </summary>
+        Nearest,
+
+        /// <summary>
+        /// Every portal within the anchor's radius, for a base spread across more than one portal.
+        /// </summary>
+        AllInRadius,
+    }
+
     /// <summary>Whether a built ward stays built. See DESIGN.md R7.</summary>
     internal enum WardMode
     {
@@ -54,6 +77,7 @@ namespace Bindrune.Config
         internal static ConfigEntry<bool> EnforceAtSource { get; private set; }
         internal static ConfigEntry<bool> StrictLadder { get; private set; }
         internal static ConfigEntry<float> AnchorRadius { get; private set; }
+        internal static ConfigEntry<PortalBinding> Binding { get; private set; }
         internal static ConfigEntry<WardMode> Wards { get; private set; }
 
         // -- Compatibility ---------------------------------------------------------------------
@@ -104,8 +128,16 @@ namespace Bindrune.Config
                 "AnchorRadius",
                 10f,
                 Synced("Metres from a Wayfarer's Anchor within which ward stones count toward the site, " +
-                       "and within which portals inherit the site's clearance (R2).",
+                       "and the range the anchor searches for the portal(s) it grants clearance to (R2).",
                     new AcceptableValueRange<float>(2f, 64f)));
+
+            Binding = config.Bind(
+                SectionClearance,
+                "PortalBinding",
+                PortalBinding.Nearest,
+                Synced("Nearest: an anchor grants its clearance to the single closest portal in range. " +
+                       "Under station mode one portal reaches everywhere, so a site only needs one. " +
+                       "AllInRadius: every portal in range, for a base spread across more than one."));
 
             Wards = config.Bind(
                 SectionClearance,

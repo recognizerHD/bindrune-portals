@@ -56,7 +56,7 @@ way you walked in, with a configurable fade.
 | # | Rule |
 |---|---|
 | **R1** | Each portal carries a **clearance mask** — independent per-tier flags, not a single level. A site with Elder's + Moder's wards accepts copper and silver but still refuses iron. Nothing forces you up the ladder in order. |
-| **R2** | A site is defined by a **Wayfarer's Anchor**. Wards must stand within the anchor's radius (default 10 m); the anchor grants its mask to every portal in that radius. Portal hubs upgrade as one — that's what a hub is for. |
+| **R2** | A site is defined by a **Wayfarer's Anchor**. Two separate relationships, and only the second is configurable: wards must stand within the anchor's radius (default 10 m), and the anchor grants its mask to the **nearest portal** within that radius. `PortalBinding = AllInRadius` instead grants it to every portal in range, for a base spread across two portals. |
 | **R3** | Only the **destination** is checked. `EnforceAtSource = false` by default. |
 | **R4** | Every ward costs that biome boss's **trophy** plus a little of **the metal it unlocks**. You always earn the shortcut by making the haul the hard way once. |
 | **R5** | Trophies are farmable by re-summoning, so the ladder is a **cost curve, not a wall**. |
@@ -109,9 +109,16 @@ Handy portals' model. Interact → pick a destination → travel immediately. Pe
 
 ### Rewire (config alternative)
 
-AnyPortal / XPortal's model. A target ZDOID stored on the portal, synced to everyone. Portals stay
-pairs and vanilla's mental model survives — but it's shared world state, with contention and a
-bigger sync story.
+AnyPortal / XPortal's model. A target ZDOID stored on the portal, synced to everyone.
+
+**Pointers are one-way, not pairs.** Each portal independently stores where *it* sends you. A points
+at B; B may point at C rather than back at A; C may point at B, which makes B and C a working pair —
+but only because two independent pointers happen to face each other. This matters: it means rewire
+does **not** bring multi-portal rooms back, because you re-aim a portal instead of building another
+one beside it.
+
+The real cost of rewire is that a target is shared world state — re-aiming changes everyone's route,
+so it carries contention and a bigger sync story than station does.
 
 Ship `SelectionMode = Station | Rewire`.
 
@@ -128,6 +135,20 @@ Ship `SelectionMode = Station | Rewire`.
 - `HidePortalNames` option, as Handy portals has.
 - In rewire mode, keep vanilla tag pairing as the fallback when no explicit target is set, so an
   unmodded save behaves normally.
+
+### Build-mode feedback — required, not polish
+
+Auto-binding removes the binding UI, but it also removes the player's certainty about what the game
+just decided for them. Two questions need answering without a menu:
+
+- **Range** — which wards count toward this anchor. Otherwise a ward planted 11 m out silently does
+  nothing, and the player has no way to find out except by hauling ore and being refused.
+- **Connection** — which portal the anchor bound to. With two portals 30 m apart, nothing on screen
+  says which one just became iron-capable.
+
+Reuse the existing in-game ward effect for both rather than authoring new art — that keeps this
+inside the §11 rule about cloning prefabs instead of shipping assets. The prefab and its component
+names are unverified; see §12.
 
 ---
 
@@ -180,14 +201,31 @@ player stood at that portal and cached with the portal record. Phase 3 nicety, n
 
 ---
 
-## 9. Open decisions
+## 9. Decisions
+
+### Settled
+
+| Question | Decision |
+|---|---|
+| Station or rewire? | **Station** by default; `SelectionMode = Rewire` available. Rewire's pointers are one-way — see §5. |
+| Independent per-tier flags, or a strict ladder (tier 3 requires 1 + 2)? | **Independent flags.** `StrictLadder` opts into requiring the lower wards first. |
+| Anchor-and-radius, or bind each ward to one portal? | **Auto-bind to the nearest portal in range** (`PortalBinding = Nearest`), no manual binding UI. `AllInRadius` covers every portal at the site. |
+
+Station mode is what makes the binding default reasonable: one portal reaches everywhere, so a site
+needs exactly one, and there is nothing to disambiguate. Binding also dissolves the overlapping-anchor
+question — nearest wins, deterministically — and gives back the "loading dock" pattern (two portals at
+one location with different clearance) that a site-wide radius cannot express.
+
+Explicit manual binding was rejected on cost: it needs a bind interaction, gamepad navigation for it,
+a stored ZDOID per ward, and dangling-reference handling when either end is destroyed while the chunk
+is unloaded. Auto-binding is recomputed from positions on the server's sweep, so it is self-healing
+and stores nothing that can rot.
+
+### Still open
 
 | Question | Lean |
 |---|---|
-| Station or rewire? | Station default, rewire as a mode. |
-| Own the destination list, or build on XPortal (GPLv3, would bind the whole mod)? | Own it under station mode; companion if we go rewire. |
-| Independent per-tier flags, or a strict ladder (tier 3 requires 1 + 2)? | Independent flags, ladder as a config switch. |
-| Anchor-and-radius, or bind each ward to one portal explicitly? | Anchor + 10 m radius, radius configurable. |
+| Own the destination list, or build on XPortal (GPLv3, would bind the whole mod)? | Own it. Effectively decided by shipping MIT under station mode — reopening means relicensing the assembly or restructuring as a companion mod, and it hardens with every Phase 1 file. |
 | Does the source ever matter? | Destination-only default, `EnforceAtSource` for the rest. |
 | Permanent wards, or an ongoing sink? | Permanent default, optional fuelled mode. |
 
@@ -258,6 +296,8 @@ on it:
 - Boss trophy prefab names, especially **The Queen** and **Fader** — verify in `ObjectDB`.
 - The authoritative non-teleportable item list — get it from the `ObjectDB` scan, not from a wiki
   and not from this document.
+- The **in-game ward effect** reused for the build-mode range and connection indicators in §5 — the
+  prefab name, the component that drives it, and whether its radius can be driven at runtime.
 - **Plugin GUIDs of the conflicting mods** in §6. `Compat/ConflictDetector.cs` currently holds only
   the two confirmed from source (Valheim Plus `org.bepinex.plugins.valheim_plus`, XPortal
   `SpikeHimself.XPortal`); Advanced Portals, Progression Portals, Gate of Ore-thority and AnyPortal
