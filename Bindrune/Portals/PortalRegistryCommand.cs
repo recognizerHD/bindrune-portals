@@ -45,11 +45,11 @@ namespace Bindrune.Portals
 
             foreach (PortalRecord portal in portals.OrderBy(p => Vector3.Distance(from, p.Position)))
             {
-                string target = portal.Target.IsNone()
+                string target = portal.TargetPid == PortalTarget.NoPid
                     ? "vanilla tag pairing"
-                    : PortalRegistry.TryGet(portal.Target, out PortalRecord destination)
+                    : PortalRegistry.TryGet(portal.TargetPid, out PortalRecord destination)
                         ? destination.ToString()
-                        : $"{portal.Target} (unknown — destroyed, or this client is out of date)";
+                        : "a portal that no longer exists";
 
                 context.AddString(
                     $"  {portal} at {portal.Position.x:F0},{portal.Position.z:F0} " +

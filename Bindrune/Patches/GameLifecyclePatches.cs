@@ -1,4 +1,5 @@
 using Bindrune.Portals;
+using Bindrune.UI;
 using HarmonyLib;
 
 namespace Bindrune.Patches
@@ -27,6 +28,7 @@ namespace Bindrune.Patches
         private static void StopRegistry()
         {
             PortalRegistry.OnWorldEnd();
+            DestinationSelector.Reset();
         }
     }
 }

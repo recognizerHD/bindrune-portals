@@ -18,7 +18,22 @@ namespace Bindrune.Portals
     internal static class ZdoKeys
     {
         /// <summary>
-        /// Where this portal sends you: our one-way target, as the destination portal's ZDOID.
+        /// This portal's permanent identity, assigned once by the server and never reused.
+        /// <para>
+        /// It exists because <b>a ZDOID is not a persistent reference</b>. Every ZDO in the world is
+        /// renumbered on every save and load — measured, not assumed: across one logout a portal went
+        /// from <c>1:20372</c> to <c>1:20375</c>, and one created that session went from
+        /// <c>2261713014:42343</c> to <c>1:32429</c>. A stored ZDOID therefore points at nothing, or
+        /// worse at whatever inherited its number. Vanilla has the same problem and solves it by
+        /// persisting portal connections as hash data and rebuilding the ids after load; we solve it
+        /// by never depending on the game's numbering at all. See DESIGN.md §12.
+        /// </para>
+        /// </summary>
+        internal static readonly int Pid = "bindrune_pid".GetStableHashCode();
+
+        /// <summary>
+        /// Where this portal sends you: the destination's <see cref="Pid"/>, resolved to a live ZDO
+        /// through the registry.
         /// <para>
         /// Deliberately <em>not</em> vanilla's <c>ConnectionType.Portal</c> connection. The server
         /// rebuilds those from tag matches every five seconds and clears any whose ends disagree,
@@ -26,12 +41,15 @@ namespace Bindrune.Portals
         /// ours separate also leaves vanilla's tag pairing running underneath as the fallback §5
         /// asks for, at no cost: a portal nobody has re-aimed still behaves exactly as it always did.
         /// </para>
-        /// <para>
-        /// ZDOIDs are stored as a pair of hashes rather than a single one, which is why this is a
-        /// <see cref="KeyValuePair{TKey,TValue}"/> and not an int.
-        /// </para>
         /// </summary>
-        internal static readonly KeyValuePair<int, int> Target = ZDO.GetHashZDOID("bindrune_target");
+        internal static readonly int Destination = "bindrune_dest".GetStableHashCode();
+
+        /// <summary>
+        /// The first attempt, which stored the destination's ZDOID and broke on the first relog. The
+        /// server strips it when it sees it, so worlds written by an earlier build clean themselves
+        /// up rather than carrying a key that means nothing.
+        /// </summary>
+        internal static readonly KeyValuePair<int, int> LegacyTarget = ZDO.GetHashZDOID("bindrune_target");
 
         /// <summary>
         /// The clearance mask granted to this portal by the anchor bound to it — per-tier flags, not

@@ -85,13 +85,13 @@ namespace Bindrune.Portals
             }
 
             PortalRecord destination = matches[0];
-            if (destination.Id == zdo.m_uid)
+            if (destination.Pid == PortalTarget.GetPid(zdo))
             {
                 context.AddString("Bindrune: a portal cannot point at itself.");
                 return;
             }
 
-            PortalTarget.Set(zdo, destination.Id);
+            PortalTarget.Set(zdo, destination.Pid);
             context.AddString($"Bindrune: {source} now points at {destination}. Nothing was written to the far side — walk back and you will not return here unless it points at you.");
         }
 

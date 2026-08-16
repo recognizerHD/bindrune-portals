@@ -119,11 +119,22 @@ applies to everyone.
 Splitting the verbs is what makes a shared destination tolerable. Travelling is the frequent action
 and costs nothing; re-aiming is deliberate and rare.
 
-### Selection is a map, not a drop-down
+### Selection is a map, with a list beside it
 
 Choose the destination by picking a portal on the world map. Names stop carrying meaning at about a
 dozen portals; position never does. This subsumes what was previously listed as a "map ping on the
 selected row" — the map *is* the selector.
+
+The list is shown **alongside** the map rather than instead of it, and the two are not alternative
+selectors: there is one highlighted destination, and the map and the list are two renderings of it.
+Moving the highlight moves both. That is why the interaction model is a highlight rather than a click
+target — it costs nothing to add a second view of a highlight, and a great deal to reconcile two
+independent ones.
+
+They answer different questions, which is why neither replaces the other. The map answers *where is
+it, and is that near the thing I care about*. The list answers *what are my options, in an order I
+chose* — nearest first, or by name — and it is the only one of the two that stays usable when the
+destination is off the visible map or has no name worth recognising.
 
 ### Pointers are one-way
 
@@ -473,6 +484,26 @@ ours do the same with `bindrune_` names.
 **`PrivateArea.CheckAccess(Vector3 point, float radius, bool flash, bool wardCheck)`** — public
 static, and the call behind `ReaimPermission = GuardStonePermitted`. Vanilla already gates portal
 interaction on it, so that setting is mostly a matter of not weakening what is already there.
+
+**A ZDOID is not a persistent reference.** Every ZDO in the world is renumbered on every save and
+load. Measured across one logout to the main menu and back:
+
+| Portal | Before | After |
+|---|---|---|
+| built earlier, already saved | `1:20372` | `1:20375` |
+| built earlier, already saved | `1:27015` | `1:27018` |
+| built during that session | `2261713014:42343` | `1:32429` |
+
+So both halves move: a ZDO created in a session carries that session's id and comes back under a
+different one, and even long-persisted ZDOs have their numeric id shifted. A stored ZDOID therefore
+points at nothing after a relog — or, worse, at whatever object inherited its number.
+
+This is why vanilla persists portal connections as `ZDOConnectionHashData` in
+`ZDOExtraData.s_saveConnections` and rebuilds the real ids after load, and why `ZDOMan.ConvertPortals`
+migrates old saves off the ZDOID-valued `ZDOVars.s_toRemoveTarget` key. **Anything of ours that must
+outlive a session refers to a portal by its own `bindrune_pid`**, a 64-bit id the server mints once
+and the registry resolves to a live ZDOID on demand. ZDOIDs are still the right handle *within* a
+session — they are how you reach the object — but they may never be written down.
 
 **Publicised assemblies are a compile-time fiction, and this game build enforces that.** Jotunn's
 prebuild publicises the game assemblies and every reference resolves against those, so

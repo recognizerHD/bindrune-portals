@@ -42,6 +42,9 @@ Violating any of these means rewriting a lot, so check against them before propo
 - **The server computes clearance masks; clients only read them.** Masks live on the anchor's ZDO and
   are *mirrored* onto every portal ZDO in radius — required, because a traveling client can read the
   destination portal's ZDO but cannot see bindrunes kilometres away.
+- **Never store a ZDOID.** The game renumbers every ZDO on every world load, so a saved ZDOID points
+  at nothing — or at whatever inherited its number. Anything that must outlive a session refers to a
+  portal by its `bindrune_pid`; the registry resolves that to a live ZDOID on demand. See DESIGN.md §12.
 - **Never read or write a private game member directly.** Jotunn's publicised assemblies make
   `portal.m_nview` compile, but the real assembly is loaded at runtime and this game build's Mono
   throws `FieldAccessException` on every call — with no build-time warning. Patch methods take

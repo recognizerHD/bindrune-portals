@@ -27,7 +27,7 @@ namespace Bindrune.Portals
         /// meet on one server; a mismatched package is then refused loudly instead of being read as
         /// garbage.
         /// </summary>
-        private const byte WireVersion = 1;
+        private const byte WireVersion = 2;
 
         /// <summary>
         /// How often the server rechecks the world for portals placed, destroyed, renamed or
@@ -38,10 +38,16 @@ namespace Bindrune.Portals
         private const float ServerSweepSeconds = 2f;
 
         private static readonly List<PortalRecord> Ordered = new List<PortalRecord>();
-        private static readonly Dictionary<ZDOID, PortalRecord> ById = new Dictionary<ZDOID, PortalRecord>();
+        private static readonly Dictionary<long, PortalRecord> ByPid = new Dictionary<long, PortalRecord>();
 
         /// <summary>Scratch list for the server sweep, reused so a 2 s timer doesn't allocate forever.</summary>
         private static readonly List<PortalRecord> SweepBuffer = new List<PortalRecord>();
+
+        /// <summary>
+        /// Pids handed out during the sweep in progress, so a duplicate is caught the moment it is
+        /// seen rather than after both portals have been published.
+        /// </summary>
+        private static readonly HashSet<long> SweepPids = new HashSet<long>();
 
         private static CustomRPC _rpc;
         private static Coroutine _sweep;
@@ -52,8 +58,12 @@ namespace Bindrune.Portals
         /// </summary>
         internal static IReadOnlyList<PortalRecord> All => Ordered;
 
-        /// <summary>Look up a single portal — the destination of a travel or a preview, usually.</summary>
-        internal static bool TryGet(ZDOID id, out PortalRecord record) => ById.TryGetValue(id, out record);
+        /// <summary>
+        /// Look up a single portal by its permanent id — resolving a stored destination, usually.
+        /// This is the step that turns a reference that survives relogs into a ZDOID you can reach
+        /// this session.
+        /// </summary>
+        internal static bool TryGet(long pid, out PortalRecord record) => ByPid.TryGetValue(pid, out record);
 
         /// <summary>
         /// Registers the sync RPC. Called once from <see cref="Plugin"/>, before any world exists.
@@ -105,8 +115,9 @@ namespace Bindrune.Portals
         private static void Clear()
         {
             Ordered.Clear();
-            ById.Clear();
+            ByPid.Clear();
             SweepBuffer.Clear();
+            SweepPids.Clear();
         }
 
         private static bool IsServer() => ZNet.instance != null && ZNet.instance.IsServer();
@@ -136,6 +147,7 @@ namespace Bindrune.Portals
         private static bool RebuildFromWorld()
         {
             SweepBuffer.Clear();
+            SweepPids.Clear();
 
             // The live list, not a copy — read it, never mutate it (DESIGN.md §12).
             List<ZDO> portals = ZDOMan.instance?.GetPortals();
@@ -151,11 +163,22 @@ namespace Bindrune.Portals
                     continue;
                 }
 
+                // The server is the only thing that hands out permanent ids, which is what keeps
+                // them unique without any coordination.
+                long pid = PortalTarget.EnsurePid(zdo, SweepPids.Contains);
+                if (pid == PortalTarget.NoPid)
+                {
+                    continue;
+                }
+
+                SweepPids.Add(pid);
+
                 SweepBuffer.Add(new PortalRecord(
+                    pid,
                     zdo.m_uid,
                     zdo.GetString(ZDOVars.s_tag, string.Empty),
                     zdo.GetPosition(),
-                    zdo.GetZDOID(ZdoKeys.Target),
+                    PortalTarget.GetDestination(zdo),
                     zdo.GetInt(ZdoKeys.ClearanceMask, 0)));
             }
 
@@ -264,15 +287,15 @@ namespace Bindrune.Portals
         private static void Apply(List<PortalRecord> records)
         {
             Ordered.Clear();
-            ById.Clear();
+            ByPid.Clear();
 
             foreach (PortalRecord record in records)
             {
                 Ordered.Add(record);
 
-                // A duplicate id would mean two ZDOs sharing one uid, which cannot happen; indexing
-                // defensively rather than throwing keeps a bad server from taking the client down.
-                ById[record.Id] = record;
+                // The server re-mints on collision, so duplicates should never reach here. Indexing
+                // rather than adding keeps a bad server from taking the client down anyway.
+                ByPid[record.Pid] = record;
             }
         }
     }

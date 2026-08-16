@@ -1,4 +1,5 @@
 using Bindrune.Portals;
+using Bindrune.UI;
 using HarmonyLib;
 using UnityEngine;
 
@@ -23,6 +24,46 @@ namespace Bindrune.Patches
     internal static class TeleportWorldPatches
     {
         /// <summary>
+        /// Interact re-aims the portal (DESIGN.md §5); <b>alt</b>-interact renames it.
+        /// <para>
+        /// Splitting them that way round costs nothing, because vanilla's alt branch does literally
+        /// nothing — it returns immediately. Renaming has to stay reachable rather than being merely
+        /// displaced: the selector identifies destinations by name, so a mod that made portals hard
+        /// to name would undermine its own map.
+        /// </para>
+        /// <para>
+        /// The alt modifier is <c>AltPlace</c>, which <c>Player.Update</c> reads to build this
+        /// argument — <b>Left Shift</b> by default, not the Alt key, and <c>JoyAltKeys</c> on a
+        /// gamepad. Worth stating because guessing it wrong looks exactly like a broken patch.
+        /// </para>
+        /// </summary>
+        [HarmonyPrefix]
+        [HarmonyPatch(nameof(TeleportWorld.Interact))]
+        private static bool InteractReaims(TeleportWorld __instance, Humanoid human, bool alt, ref bool __result)
+        {
+            // Skipping the original means we owe it a return value: true says "this interaction was
+            // handled", and without it the game goes looking for something else to interact with.
+            __result = true;
+
+            // Vanilla's own gate on interacting with a portal at all. Ours is about who may re-aim,
+            // and applies on top of it rather than instead.
+            if (!PrivateArea.CheckAccess(__instance.transform.position, 0f, true, false))
+            {
+                human?.Message(MessageHud.MessageType.Center, "$piece_noaccess");
+                return false;
+            }
+
+            if (alt)
+            {
+                TextInput.instance.RequestText(__instance, "$piece_portal_tag", 10);
+                return false;
+            }
+
+            DestinationSelector.Open(__instance, human);
+            return false;
+        }
+
+        /// <summary>
         /// The travel gate. DESIGN.md §6 names this prefix as where the check lives, and Phase 2
         /// puts the destination's clearance mask into it; for now it resolves our target and
         /// otherwise reproduces vanilla's own guards.
@@ -44,8 +85,8 @@ namespace Bindrune.Patches
             }
 
             ZDO zdo = ___m_nview.GetZDO();
-            ZDOID targetId = PortalTarget.Get(zdo);
-            if (targetId.IsNone())
+            long targetPid = PortalTarget.GetDestination(zdo);
+            if (targetPid == PortalTarget.NoPid)
             {
                 // Never re-aimed. Vanilla's tag pairing owns this portal entirely.
                 return true;
@@ -77,14 +118,22 @@ namespace Bindrune.Patches
                 return false;
             }
 
-            ZDO destination = ZDOMan.instance?.GetZDO(targetId);
+            // The pid survives relogs; the ZDOID it resolves to does not, so the registry is asked
+            // fresh every time rather than anything caching the answer.
+            if (!PortalRegistry.TryGet(targetPid, out PortalRecord target))
+            {
+                player.Message(MessageHud.MessageType.Center, "This portal points at somewhere that no longer exists.");
+                return false;
+            }
+
+            ZDO destination = ZDOMan.instance?.GetZDO(target.Id);
             if (destination == null)
             {
                 // Normal, not exceptional: the destination is usually kilometres away and not in
                 // this client's ZDO set. Ask for it — the TargetFound patch below is already asking
                 // every frame the player stands here, so this is the rare case of walking straight
                 // in before it arrived.
-                ZDOMan.instance?.RequestZDO(targetId);
+                ZDOMan.instance?.RequestZDO(target.Id);
                 player.Message(MessageHud.MessageType.Center, "The far side has not answered yet.");
                 return false;
             }
@@ -125,7 +174,7 @@ namespace Bindrune.Patches
                 return;
             }
 
-            __result = !PortalTarget.Get(___m_nview.GetZDO()).IsNone();
+            __result = PortalTarget.GetDestination(___m_nview.GetZDO()) != PortalTarget.NoPid;
         }
 
         /// <summary>
@@ -145,19 +194,19 @@ namespace Bindrune.Patches
                 return;
             }
 
-            ZDOID targetId = PortalTarget.Get(___m_nview.GetZDO());
-            if (targetId.IsNone())
+            long targetPid = PortalTarget.GetDestination(___m_nview.GetZDO());
+            if (targetPid == PortalTarget.NoPid || !PortalRegistry.TryGet(targetPid, out PortalRecord target))
             {
                 return;
             }
 
-            if (ZDOMan.instance?.GetZDO(targetId) != null)
+            if (ZDOMan.instance?.GetZDO(target.Id) != null)
             {
                 __result = true;
                 return;
             }
 
-            ZDOMan.instance?.RequestZDO(targetId);
+            ZDOMan.instance?.RequestZDO(target.Id);
         }
     }
 }
