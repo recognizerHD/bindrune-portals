@@ -50,6 +50,16 @@
   </ItemGroup>
 
   <!--
+    Jotunn 2.29.2's reference list includes UnityEngine.ProfilerModule.dll, which this Valheim build
+    does not ship, so every build warns MSB3245 about it. Nothing here profiles, so drop the
+    reference rather than train ourselves to read past a warning. Revisit if a future game build
+    starts shipping the module.
+  -->
+  <ItemGroup>
+    <Reference Remove="UnityEngine.ProfilerModule" />
+  </ItemGroup>
+
+  <!--
     Optional convenience: drop the built plugin into BepInEx/plugins on success.
     Creates the folder if it isn't there — setting MOD_DEPLOYPATH is the statement of intent, and
     silently skipping the copy because the folder doesn't exist yet reads as a broken build.

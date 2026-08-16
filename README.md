@@ -42,6 +42,19 @@ installed into Valheim, and the game run once so BepInEx generates its folders.
 If the game path is wrong or BepInEx is missing, the build stops with one plain error saying which,
 rather than a hundred unresolved references.
 
+### Checking the game API
+
+Anything this mod calls in the game has to be read off the shipped assemblies first, not remembered —
+see [DESIGN.md §12](DESIGN.md#12-game-api--verified-and-still-unverified). `tools/Dump-GameApi.ps1`
+is what that was done with: it reads metadata through the Mono.Cecil that BepInEx already ships, using
+the same `VALHEIM_INSTALL` the build uses, and copies nothing out of the game folder.
+
+```powershell
+./tools/Dump-GameApi.ps1 -Type TeleportWorld
+./tools/Dump-GameApi.ps1 -Type Game -IL ConnectPortals
+./tools/Dump-GameApi.ps1 -Member IsTeleportable
+```
+
 ### Toolchain
 
 | | |

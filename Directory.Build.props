@@ -1,25 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   Imported by Microsoft.Common.props *before* NuGet's generated props, which is the
-  point of this file: Jotunn's build/Paths.props derives BEPINEX_PATH and
-  VALHEIM_MANAGED from VALHEIM_INSTALL and then resolves every game/BepInEx
-  <Reference> HintPath from them. Those are item definitions, so the values must be
-  in place before NuGet's props are imported — setting them later in the .csproj is
-  too late and yields references pointing at a guessed Steam path.
+  point of this file. Jotunn's build/Paths.props imports Environment.props, derives
+  BEPINEX_PATH and VALHEIM_MANAGED from VALHEIM_INSTALL, and resolves every
+  game/BepInEx <Reference> HintPath from them — all at evaluation time. Anything it
+  depends on has to be set before NuGet's props are imported; setting it later in the
+  .csproj is too late and yields references pointing at a guessed Steam path.
 
-  Defining SolutionDir here also makes `dotnet build Bindrune/Bindrune.csproj` behave
-  the same as building the solution: Jotunn's props import Environment.props and
-  DoPrebuild.props relative to $(SolutionDir), which MSBuild only sets for .sln builds.
+  What it depends on here is SolutionDir, because Paths.props reaches Environment.props
+  and DoPrebuild.props through it and MSBuild only defines it for .sln builds. Setting
+  it below is therefore what makes `dotnet build Bindrune/Bindrune.csproj` behave the
+  same as building the solution.
+
+  Note what this file deliberately does *not* do: import Environment.props itself.
+  Paths.props already does, on its first line, so a second import here changes no value
+  and only earns an MSB4011 "cannot be imported again" on every single build.
 -->
 <Project>
 
   <PropertyGroup>
     <SolutionDir Condition="'$(SolutionDir)' == ''">$(MSBuildThisFileDirectory)</SolutionDir>
   </PropertyGroup>
-
-  <!-- Machine-local game path. Gitignored; see Environment.props.example. -->
-  <Import Project="$(MSBuildThisFileDirectory)Environment.props"
-          Condition="Exists('$(MSBuildThisFileDirectory)Environment.props')" />
 
   <PropertyGroup>
     <Authors>recognizerHD</Authors>

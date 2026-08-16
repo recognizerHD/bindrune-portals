@@ -23,9 +23,19 @@
     <!-- <VALHEIM_INSTALL>$(HOME)/Library/Application Support/Steam/steamapps/common/Valheim/Contents/MacOS</VALHEIM_INSTALL> -->
 
     <!--
-      Optional. If set and the folder exists, a successful build copies Bindrune.dll
-      straight into your plugins folder. Leave it unset to build without deploying.
+      Optional. If set, a successful build copies Bindrune.dll straight into your plugins
+      folder, creating it if needed. Leave it unset to build without deploying.
     -->
     <MOD_DEPLOYPATH>$(VALHEIM_INSTALL)\BepInEx\plugins\Bindrune</MOD_DEPLOYPATH>
+
+    <!--
+      If you launch through r2modman or Thunderstore Mod Manager, deploy into the profile
+      instead. Those launch the game with Doorstop pointed at the profile's own BepInEx, so
+      the copy in the game folder is never loaded and you will spend an evening wondering why
+      your changes do nothing. Replace the profile name with yours.
+    -->
+    <!--
+    <MOD_DEPLOYPATH>$(APPDATA)\r2modmanPlus-local\Valheim\profiles\Default\BepInEx\plugins\Bindrune</MOD_DEPLOYPATH>
+    -->
   </PropertyGroup>
 </Project>
