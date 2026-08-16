@@ -12,7 +12,8 @@ Phase 1 not started.
 
 Two features, one system.
 
-1. **Any-portal travel.** Interact with a portal, get a list of every portal in the world, pick one, go.
+1. **Any-portal travel.** Interact with a portal, pick any portal in the world off the map, and it
+   points there — for everyone — until someone re-aims it. Walking in travels.
 2. **Destination clearance.** Each portal site has a clearance mask built out of physical ward
    stones. When you travel, the game checks the mask of the portal you are *arriving at* against
    what you are carrying.
@@ -31,7 +32,7 @@ outposts stay cheap, disposable and one-way.
 | Mod | Nexus | What we take |
 |---|---|---|
 | AnyPortal (+ XPortal, its maintained rewrite) | [170](https://www.nexusmods.com/valheim/mods/170) / [2239](https://www.nexusmods.com/valheim/mods/2239) | The destination list. Non-negotiable feature. |
-| Handy portals | [471](https://www.nexusmods.com/valheim/mods/471) | The **station** interaction model (pick-and-go, nothing persisted) + gamepad support + optional name hiding. |
+| Handy portals | [471](https://www.nexusmods.com/valheim/mods/471) | Gamepad support and optional name hiding. Its station interaction model is *not* what we build — see §5, and §13 for why it was set aside. |
 | Advanced Portals | [2187](https://www.nexusmods.com/valheim/mods/2187) | Per-portal cargo permissions — the *idea*, not the delivery. |
 | Immersive Portals | [268](https://www.nexusmods.com/valheim/mods/268) | Seamless no-loading-screen transit. Optional, last phase. |
 
@@ -91,50 +92,56 @@ mod; it just gets conservative until someone edits one line.
 
 ---
 
-## 5. Interaction model — the biggest structural choice
+## 5. Interaction model
 
-The two reference mods sit on opposite sides of this.
+Settled: **rewire, selected on the map.** A portal's destination is a property of the portal and
+applies to everyone.
 
-### Station (recommended default)
+### Two verbs
 
-Handy portals' model. Interact → pick a destination → travel immediately. Per-player, per-trip,
-**nothing persisted**.
+- **Walk in** — travel to wherever the portal currently points. No menu, no dialog.
+- **Interact** — open the map selector and re-aim the portal. The new target stands for everyone
+  until someone changes it again.
 
-- No target ZDO field, no rewire RPC, no two players fighting over one portal's destination.
-- Each trip is a fresh question, which is exactly the shape a destination-clearance check wants.
-- Cost: the network flattens to hub-and-spoke and portals stop being pairs.
-- **Upside for this mod specifically:** once travel is one-click, the ward network becomes the
-  *only* friction left in the logistics game. That puts the core mechanic at the centre of the mod
-  instead of beside it.
+Splitting the verbs is what makes a shared destination tolerable. Travelling is the frequent action
+and costs nothing; re-aiming is deliberate and rare.
 
-### Rewire (config alternative)
+### Selection is a map, not a drop-down
 
-AnyPortal / XPortal's model. A target ZDOID stored on the portal, synced to everyone.
+Choose the destination by picking a portal on the world map. Names stop carrying meaning at about a
+dozen portals; position never does. This subsumes what was previously listed as a "map ping on the
+selected row" — the map *is* the selector.
 
-**Pointers are one-way, not pairs.** Each portal independently stores where *it* sends you. A points
-at B; B may point at C rather than back at A; C may point at B, which makes B and C a working pair —
-but only because two independent pointers happen to face each other. This matters: it means rewire
-does **not** bring multi-portal rooms back, because you re-aim a portal instead of building another
-one beside it.
+### Pointers are one-way
 
-The real cost of rewire is that a target is shared world state — re-aiming changes everyone's route,
-so it carries contention and a bigger sync story than station does.
+Each portal independently stores where *it* sends you. A points at B; B may point at C rather than
+back at A; C may point at B, which makes B and C a working pair — but only because two independent
+pointers happen to face each other. Consequence: this does **not** require multi-portal rooms, since
+you re-aim a portal instead of building another beside it.
 
-Ship `SelectionMode = Station | Rewire`.
+### What it costs
 
-### Panel requirements
+A target is shared world state, so re-aiming changes everyone's route — including someone mid-haul.
+That contention is a shipped property of the design now rather than something avoided, and it is why
+two questions in §9 stay open: who may re-aim a portal, and whether players rebuild hubs anyway to
+dodge the fights.
 
-- **Gamepad navigation from the first commit.** Handy portals binds A to travel; retrofitting Unity
-  UI navigation later is miserable.
-- Sort/filter: distance, name, favourites, and one **"only destinations that accept my cargo"**
-  toggle that most people leave on.
-- Per-row **clearance chips** (Cu / Fe / Ag / Bm / Fl) — granted filled, missing dashed — plus a
-  verdict column and a footer showing what you're carrying and how many destinations will take it.
-- **Map ping** on the selected row. The only way to make sense of fourteen names.
-- `DiscoveredPortalsOnly` — a portal appears in your list only once you've stood at it.
+It also moves the clearance check. With a per-trip picker, choosing a destination and being told "no"
+are the same moment. Here you commit by walking, so a refusal lands at the threshold with no dialog to
+deliver it — which makes R6's named refusals and §7's approach-time warning matter *more*, not less.
+
+### Selector requirements
+
+- **Gamepad navigation from the first commit.** Retrofitting Unity UI navigation later is miserable.
+- Per-portal **clearance chips** (Cu / Fe / Ag / Bm / Fl) — granted filled, missing dashed — plus a
+  verdict and a footer showing what you're carrying and how many destinations will take it.
+- Filter by **"only destinations that accept my cargo"**. Still meaningful under a shared target: you
+  re-aim because you intend to travel with what you are holding.
+- Sort/filter by distance, name and favourites for the list view that backs the map.
+- `DiscoveredPortalsOnly` — a portal is selectable only once you've stood at it.
 - `HidePortalNames` option, as Handy portals has.
-- In rewire mode, keep vanilla tag pairing as the fallback when no explicit target is set, so an
-  unmodded save behaves normally.
+- Keep vanilla tag pairing as the fallback when no explicit target is set, so an unmodded save
+  behaves normally.
 
 ### Build-mode feedback — required, not polish
 
@@ -175,6 +182,11 @@ One real collision: seamless transit removes the **Interact** moment, and the in
 where the cargo check lives. If you walk in and the destination refuses your ore, there's no dialog
 to refuse you in.
 
+**Since §5 settled on rewire, this is no longer only a Phase 4 problem.** Interact now re-aims rather
+than travels, so *every* trip is a walk-in and there is never a dialog to carry the refusal. The
+approach-time warning below is the answer to the base game loop, not just to seamless transit — which
+is an argument for pulling some of it earlier than Phase 4.
+
 Fix — and it improves the base experience too:
 
 - Resolve the destination's mask when the player comes within ~4 m of an open portal, not at transit.
@@ -194,7 +206,7 @@ player stood at that portal and cached with the portal record. Phase 3 nicety, n
 
 | # | Phase | Ships | Standalone? |
 |---|---|---|---|
-| 1 | **Destination list** | Portal registry, server sync, panel with keyboard *and* gamepad nav, map ping. Station mode. | Yes — and it's the must-have. |
+| 1 | **Destination selector** | Portal registry, server sync, the one-way target on the portal ZDO, and the map selector with keyboard *and* gamepad nav. | Yes — and it's the must-have. |
 | 2 | **Anchors & wards** | Six pieces, the mask, server recompute, the destination check, named refusals. | Yes. The mod's reason to exist. |
 | 3 | **Fusion & polish** | Clearance chips in the panel, cargo filter, portal rune tinting by tier, destination thumbnails. | Needs 1 + 2. |
 | 4 | **Seamless transit** | Approach-time gating, rune curtain, preload, fade. Default off. | Optional — cut without regret if it fights the game. |
@@ -207,14 +219,19 @@ player stood at that portal and cached with the portal record. Phase 3 nicety, n
 
 | Question | Decision |
 |---|---|
-| Station or rewire? | **Station** by default; `SelectionMode = Rewire` available. Rewire's pointers are one-way — see §5. |
+| Station or rewire? | **Rewire, selected on the map** (§5). A portal's destination belongs to the portal and applies to everyone; walk in to travel, interact to re-aim. Station is deferred to §13 and is not being built. |
 | Independent per-tier flags, or a strict ladder (tier 3 requires 1 + 2)? | **Independent flags.** `StrictLadder` opts into requiring the lower wards first. |
 | Anchor-and-radius, or bind each ward to one portal? | **Auto-bind to the nearest portal in range** (`PortalBinding = Nearest`), no manual binding UI. `AllInRadius` covers every portal at the site. |
 
-Station mode is what makes the binding default reasonable: one portal reaches everywhere, so a site
-needs exactly one, and there is nothing to disambiguate. Binding also dissolves the overlapping-anchor
-question — nearest wins, deterministically — and gives back the "loading dock" pattern (two portals at
-one location with different clearance) that a site-wide radius cannot express.
+One portal per site is what makes the binding default reasonable, and that survives the move to
+rewire: re-aiming reaches every destination from a single portal, so a site needs exactly one and
+there is nothing to disambiguate. Binding also dissolves the overlapping-anchor question — nearest
+wins, deterministically — and gives back the "loading dock" pattern (two portals at one location with
+different clearance) that a site-wide radius cannot express.
+
+The caveat is contention: if re-aiming fights push players into building hubs after all, `Nearest`
+would charge a full ward set per portal in the hub. `AllInRadius` is the escape hatch, and that is
+now its main justification rather than the large-base case it was kept for.
 
 Explicit manual binding was rejected on cost: it needs a bind interaction, gamepad navigation for it,
 a stored ZDOID per ward, and dangling-reference handling when either end is destroyed while the chunk
@@ -225,7 +242,9 @@ and stores nothing that can rot.
 
 | Question | Lean |
 |---|---|
-| Own the destination list, or build on XPortal (GPLv3, would bind the whole mod)? | Own it. Effectively decided by shipping MIT under station mode — reopening means relicensing the assembly or restructuring as a companion mod, and it hardens with every Phase 1 file. |
+| Own the destination list, or build on XPortal (GPLv3, would bind the whole mod)? | **Own it — and this one got sharper.** §2 notes XPortal already solves registry + sync + panel + map ping *for the rewire model*, which is now exactly the model we ship, so the temptation to build on it is real. Taking it relicenses the whole assembly GPL-3.0. Writing our own one-way target and map selector is a few days; the clearance system is the actual value. Read XPortal for approach, copy nothing. |
+| Who may re-aim a portal? | New, and created by this decision. Anyone, the builder only, ward-gated, or admin-only. Contention is now shipped, so "anyone" needs to be a deliberate choice rather than a default nobody picked. |
+| How is a player warned *before* they commit? | New. You commit by walking, so there is no dialog to refuse you in. §7's approach-time gating was Phase 4 and optional; under rewire it is closer to core. At minimum the portal's own state should say where it points and whether your cargo will make it. |
 | Does the source ever matter? | Destination-only default, `EnforceAtSource` for the rest. |
 | Permanent wards, or an ongoing sink? | Permanent default, optional fuelled mode. |
 
@@ -257,9 +276,11 @@ strictly more paperwork for the same practical outcome here.
 Two things constrain the choice:
 
 1. **If you fork XPortal, you must ship GPLv3.** XPortal is GPL-3.0, so any derivative is too, and
-   that relicenses your whole assembly. This is a strong argument for the station model — writing
-   the registry and panel yourself keeps the licence choice in your hands. You can still *read*
-   XPortal for approach; copying code is what triggers it.
+   that relicenses your whole assembly. This got harder once §5 settled on rewire, because rewire is
+   precisely what XPortal already implements — the overlap is no longer theoretical. Writing the
+   registry, the one-way target and the map selector ourselves is what keeps the licence choice in
+   our hands, and it is a few days of work against permanently binding the assembly. You can still
+   *read* XPortal for approach; copying code is what triggers it.
 2. **A code licence does not cover art or game assets.** Keep those separate:
    - **Never commit Valheim's DLLs, publicised assemblies, or ripped meshes/textures** to the repo.
      They're Iron Gate's, redistribution isn't yours to grant, and it's the fastest way to get a
@@ -308,3 +329,27 @@ Also worth reading directly: [XPortal's source](https://github.com/SpikeHimself/
 read for approach, don't copy code unless you're licensing GPLv3), which uses ZDO keys
 `XPortal_TargetId` / `XPortal_PreviousId` and a client `KnownPortalsManager` resynced from the
 server.
+
+---
+
+## 13. Future ideas — noted, not planned
+
+Things deliberately set aside. Nothing here is scheduled; they are recorded so the reasoning is not
+lost and so nobody re-derives them from scratch.
+
+### Station mode — per-player, per-trip destinations
+
+Handy portals' model. Interact, pick a destination, travel immediately; the choice is yours alone and
+nothing is written to the portal.
+
+It gives up the thing rewire is built around — a portal that means the same to everyone — but it has
+two real advantages worth remembering if the shared-target model turns out to chafe:
+
+- **No contention.** No two players ever fight over one portal's destination, and re-aiming cannot
+  strand somebody mid-haul.
+- **The clearance check lands in the right place.** Each trip is a fresh question, so choosing a
+  destination and being told "no" are the same moment — no walking into a wall, no need for
+  approach-time warnings to carry the refusal.
+
+It would slot in as a `SelectionMode` alongside rewire rather than replacing it. The cost is a second
+travel path to maintain and test, which is why it is not being built now.

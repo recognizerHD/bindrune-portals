@@ -6,7 +6,9 @@ Context for Claude Code sessions in this repo.
 
 **Bindrune** — a Valheim BepInEx mod. Two features, one system:
 
-1. **Any-portal travel.** Interact with a portal, get a list of every portal in the world, pick one, go.
+1. **Any-portal travel.** Interact with a portal, pick any portal in the world off the map, and it
+   points there for everyone until someone re-aims it. Walking in travels. Rewire, not per-player
+   station mode — see DESIGN.md §5, and §13 for what was deferred.
 2. **Destination clearance.** Each portal site has a clearance mask built from physical ward stones
    bought with boss trophies. Travel is checked against the mask of the portal you're **arriving
    at**, not the one you're leaving — so ore flows *inward* toward places you've invested in, and

@@ -2,22 +2,6 @@ using BepInEx.Configuration;
 
 namespace Bindrune.Config
 {
-    /// <summary>How a player picks where a portal sends them. See DESIGN.md §5.</summary>
-    internal enum SelectionMode
-    {
-        /// <summary>
-        /// Interact, pick a destination, travel. Per-player, per-trip, nothing persisted —
-        /// no target field on the portal and no two players fighting over one portal's target.
-        /// </summary>
-        Station,
-
-        /// <summary>
-        /// Vanilla's mental model: a portal is aimed at another portal and stays that way for
-        /// everyone. Shared world state, so it carries contention and a bigger sync story.
-        /// </summary>
-        Rewire,
-    }
-
     /// <summary>
     /// Which portals an anchor grants its clearance to. See DESIGN.md R2.
     /// <para>
@@ -29,9 +13,9 @@ namespace Bindrune.Config
     internal enum PortalBinding
     {
         /// <summary>
-        /// The single closest portal within the anchor's radius. Under station mode a site only ever
-        /// needs one portal, so there is nothing to disambiguate — and two portals at one location
-        /// can carry different clearance.
+        /// The single closest portal within the anchor's radius. Re-aiming reaches every destination
+        /// from one portal, so a site only ever needs one and there is nothing to disambiguate — and
+        /// two portals at one location can carry different clearance.
         /// </summary>
         Nearest,
 
@@ -68,7 +52,9 @@ namespace Bindrune.Config
 
         // -- Travel ----------------------------------------------------------------------------
 
-        internal static ConfigEntry<SelectionMode> Selection { get; private set; }
+        // There is no SelectionMode entry: rewire is the only travel model being built. Station is
+        // recorded in DESIGN.md §13 as a future idea, and a config switch with one working value is
+        // just a trap for whoever flips it.
         internal static ConfigEntry<bool> DiscoveredPortalsOnly { get; private set; }
         internal static ConfigEntry<bool> HidePortalNames { get; private set; }
 
@@ -87,24 +73,17 @@ namespace Bindrune.Config
 
         internal static void Bind(ConfigFile config)
         {
-            Selection = config.Bind(
-                SectionTravel,
-                "SelectionMode",
-                SelectionMode.Station,
-                Synced("Station: pick a destination each time you use a portal, nothing is stored. " +
-                       "Rewire: aim a portal at another portal for everyone, vanilla-style."));
-
             DiscoveredPortalsOnly = config.Bind(
                 SectionTravel,
                 "DiscoveredPortalsOnly",
                 false,
-                Synced("A portal only appears in your destination list once you have stood at it."));
+                Synced("A portal can only be selected as a destination once you have stood at it."));
 
             HidePortalNames = config.Bind(
                 SectionTravel,
                 "HidePortalNames",
                 false,
-                new ConfigDescription("Hide portal names in the destination list. Local to you."));
+                new ConfigDescription("Hide portal names in the map selector. Local to you."));
 
             // -- Clearance ---------------------------------------------------------------------
 
@@ -136,7 +115,7 @@ namespace Bindrune.Config
                 "PortalBinding",
                 PortalBinding.Nearest,
                 Synced("Nearest: an anchor grants its clearance to the single closest portal in range. " +
-                       "Under station mode one portal reaches everywhere, so a site only needs one. " +
+                       "Re-aiming reaches everywhere from one portal, so a site only needs one. " +
                        "AllInRadius: every portal in range, for a base spread across more than one."));
 
             Wards = config.Bind(
