@@ -2,6 +2,7 @@ using System.Reflection;
 using BepInEx;
 using Bindrune.Compat;
 using Bindrune.Config;
+using Bindrune.Portals;
 using HarmonyLib;
 using Jotunn.Utils;
 
@@ -29,6 +30,10 @@ namespace Bindrune
             Instance = this;
 
             BindruneConfig.Bind(base.Config);
+
+            // Before any world exists: Jotunn wires the RPC into its own Game.Start hook, and the
+            // join-time synchronisation has to be registered before anyone can join.
+            PortalRegistry.Register();
 
             _harmony = new Harmony(BuildInfo.Guid);
             _harmony.PatchAll(Assembly.GetExecutingAssembly());

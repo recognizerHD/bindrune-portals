@@ -1,0 +1,61 @@
+using System.Collections.Generic;
+using System.Linq;
+using Jotunn.Entities;
+using UnityEngine;
+
+namespace Bindrune.Portals
+{
+    /// <summary>
+    /// <c>bindrune_portals</c> — print what this instance believes about the world's portals.
+    /// <para>
+    /// The registry has no visible effect until the selector exists, so without this there is no way
+    /// to tell a working sync from a silently empty one. It stays useful past Phase 1: the whole
+    /// design turns on a client holding accurate data about portals it cannot see, and this is how
+    /// you check whether it does.
+    /// </para>
+    /// <para>
+    /// Read-only, so not a cheat and not server-only — the interesting question is usually what a
+    /// <em>client</em> thinks it knows.
+    /// </para>
+    /// </summary>
+    internal sealed class PortalRegistryCommand : BindruneCommand
+    {
+        public override string Name => "bindrune_portals";
+
+        public override string Help =>
+            "List the portals Bindrune knows about, nearest first. " +
+            "On a client this is what the server has told you, not what is loaded around you.";
+
+        protected override void Execute(string[] args, Terminal context)
+        {
+            IReadOnlyList<PortalRecord> portals = PortalRegistry.All;
+            string role = ZNet.instance == null
+                ? "no world loaded"
+                : ZNet.instance.IsServer() ? "server" : "client";
+
+            if (portals.Count == 0)
+            {
+                context.AddString($"Bindrune ({role}): no portals known.");
+                return;
+            }
+
+            Vector3 from = Player.m_localPlayer != null ? Player.m_localPlayer.transform.position : Vector3.zero;
+
+            context.AddString($"Bindrune ({role}): {portals.Count} portal(s).");
+
+            foreach (PortalRecord portal in portals.OrderBy(p => Vector3.Distance(from, p.Position)))
+            {
+                string target = portal.Target.IsNone()
+                    ? "vanilla tag pairing"
+                    : PortalRegistry.TryGet(portal.Target, out PortalRecord destination)
+                        ? destination.ToString()
+                        : $"{portal.Target} (unknown — destroyed, or this client is out of date)";
+
+                context.AddString(
+                    $"  {portal} at {portal.Position.x:F0},{portal.Position.z:F0} " +
+                    $"({Vector3.Distance(from, portal.Position):F0}m) " +
+                    $"-> {target}, clearance 0x{portal.ClearanceMask:X}");
+            }
+        }
+    }
+}
