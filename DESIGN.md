@@ -3,8 +3,10 @@
 > A Valheim mod. Travel to any portal by name; what you may **carry** through is decided by the
 > bindrunes standing at the **destination**, and every bindrune is bought with a boss trophy.
 
-Status: **Draft 2.** Scaffold, config and conflict detection exist; no portal or bindrune behaviour yet.
-Phase 1 not started.
+Status: **Draft 3. Phase 1 is built and playable** — the portal registry, one-way targets that survive
+a relog, and destination selection on the map. Phase 2, the bindrunes themselves and the clearance
+check that is the reason the mod exists, has not been started. §12 is now split into what has been
+read off the shipped assemblies and what still needs the game running.
 
 ---
 
@@ -276,7 +278,7 @@ player stood at that portal and cached with the portal record. Phase 3 nicety, n
 
 | # | Phase | Ships | Standalone? |
 |---|---|---|---|
-| 1 | **Destination selector** | Portal registry, server sync, the one-way target on the portal ZDO, and the map selector with keyboard *and* gamepad nav. | Yes — and it's the must-have. |
+| 1 | **Destination selector** ✅ | Portal registry, server sync, the one-way target on the portal ZDO, and the map selector with keyboard *and* gamepad nav. | Yes — and it's the must-have. |
 | 2 | **Anchors & bindrunes** | Six pieces, the mask, server recompute, the destination check, named refusals on entry. | Yes. The mod's reason to exist. |
 | 3 | **Fusion & polish** | The blocked-cargo overlay on inventory icons, clearance chips in the selector, cargo filter, portal rune tinting by tier, destination thumbnails. | Needs 1 + 2. |
 | 4 | **Seamless transit** | Approach-time gating, rune curtain, preload, fade. Default off. | Optional — cut without regret if it fights the game. |
@@ -284,6 +286,22 @@ player stood at that portal and cached with the portal record. Phase 3 nicety, n
 Phase 2 is playable on the entry message alone, but it is the *worse* half of §5's two layers — you
 learn at the threshold instead of while packing. If Phase 3 slips, pull the overlay forward out of it
 rather than shipping Phase 2 as the long-term state.
+
+### What Phase 1 actually shipped
+
+Built and verified in game: the server-swept registry with its clearance-mask field reserved,
+`bindrune_pid` identity, one-way targets honoured by a `TeleportWorld.Teleport` prefix with vanilla
+tag pairing intact as the fallback, the map-and-list selector with rebindable keyboard and gamepad
+bindings, `ReaimPermission`, `HidePortalNames`, and the `bindrune_portals` / `bindrune_aim` /
+`bindrune_net` commands.
+
+Deferred from §5 rather than forgotten: `DiscoveredPortalsOnly` and favourites, both of which need
+per-player state that nothing else yet requires, and the cargo filter, which has nothing to filter on
+until Phase 2 produces masks. Clearance chips are Phase 3 by design.
+
+**Not yet proven: the client half of the sync.** Single player is its own server, so
+`AddInitialSynchronization` and the broadcast have never run. `bindrune_net` exists to settle it in
+one command per machine — see §6.
 
 ---
 

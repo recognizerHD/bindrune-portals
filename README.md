@@ -11,8 +11,35 @@ build order.
 
 ## Status
 
-Pre-alpha. The project scaffold, config and mod-conflict detection are in place; **no portal or bindrune
-behaviour is implemented yet.** Phase 1 (the destination list) has not started.
+Pre-alpha, but playable. **Phase 1 is done:** interact with a portal, pick any portal in the world off
+the map, and it points there for everyone until someone re-aims it. Walking in travels. Pointers are
+one-way, so a portal you aim at your base does not automatically bring you home.
+
+**The bindrunes do not exist yet.** Phase 2 is what makes this more than another any-portal mod, and
+it has not been started — nothing restricts what you carry, so today this behaves like a
+destination-selector mod with an unusual one-way rule.
+
+Also not yet tested with a second player connected. Everything works in single player; the
+server-to-client sync path has been written and instrumented but never run for real.
+
+### Controls
+
+| | |
+|---|---|
+| **E** at a portal | Open the destination selector |
+| **Shift+E** | Rename the portal, as vanilla |
+| **← →** | Change the highlighted destination |
+| **P** | Confirm |
+| **Escape** | Cancel |
+| **O** | Cycle the list order |
+
+All rebindable, with gamepad equivalents, under `5 - Selector keys` in the config.
+
+### Console commands
+
+`bindrune_portals` lists every portal this instance knows about and where it points.
+`bindrune_aim <name>` re-aims the nearest portal without the map. `bindrune_net` reports the sync's
+state — run it on a server and a client and compare.
 
 ## Building
 
@@ -38,6 +65,11 @@ installed into Valheim, and the game run once so BepInEx generates its folders.
 
 3. The output is a single `Bindrune.dll`. Set `MOD_DEPLOYPATH` in `Environment.props` to have a
    successful build copy it straight into `BepInEx/plugins`.
+
+   That one file is the whole mod — everything else it needs is BepInEx and Jotunn, which are
+   installed separately. The `.pdb` beside it is optional and only affects debugging: with it,
+   exceptions in the log carry file names and line numbers, which is worth having while developing
+   and worth leaving out of a release.
 
 If the game path is wrong or BepInEx is missing, the build stops with one plain error saying which,
 rather than a hundred unresolved references.
@@ -66,9 +98,15 @@ the same `VALHEIM_INSTALL` the build uses, and copies nothing out of the game fo
 
 ## Installing
 
+You need **BepInEx 5** and **Jotunn**, then drop `Bindrune.dll` into `BepInEx/plugins`. Jotunn is a
+hard dependency: without it the plugin is skipped and the log says so.
+
 Bindrune must be installed on the **server and every client**. The server owns clearance and computes
 the masks; clients need the destination panel and the travel gate. Config synchronises from the
 server, so clearance rules cannot be edited client-side.
+
+While the mod is pre-release, `LogNetworkSync` defaults to **on** and narrates the portal sync into
+the log. Turn it off in the config if you'd rather it were quiet; it will default off at release.
 
 Cargo checks are client-trusting, because player inventories are client-side in Valheim — same as
 vanilla. This is a rule system for a co-op server, **not anti-cheat.**

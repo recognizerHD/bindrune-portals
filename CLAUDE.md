@@ -22,12 +22,21 @@ the repo.
 
 ## Current state
 
-Scaffold in place, no game behaviour yet. Phase 1 (destination list) has not been started.
+**Phase 1 is built and verified in game.** Phase 2 has not been started.
 
-What exists: solution + project, the Jotunn/BepInEx build setup, `Plugin.cs` (BepInPlugin entry,
-Harmony bootstrap, network compatibility), the ServerSync'd config, and mod-conflict detection.
-None of it touches a game API, so all of it is verified — it compiles and the build guards were
-tested. Everything from `Portals/` onward is still unwritten.
+Working: the server-swept portal registry (`Portals/`), `bindrune_pid` identity that survives a
+relog, one-way targets honoured by a `TeleportWorld.Teleport` prefix, and the map-and-list
+destination selector (`UI/`) with rebindable keyboard and gamepad keys. Vanilla tag pairing still
+works untouched on any portal nobody has re-aimed.
+
+Three console commands, all of which echo to the log: `bindrune_portals` lists what this instance
+knows, `bindrune_aim` re-aims without the UI, `bindrune_net` reports the sync's state. Reach for
+those before inferring anything about a running game — several rounds were lost this way already.
+
+**The client half of the sync has never run**, because single player is its own server. That is the
+first thing to test when a second machine is available.
+
+Still unwritten: everything under `Tiers/`, `Bindrunes/`, `Clearance/`, and the inventory overlay.
 
 ## Non-negotiable invariants
 
