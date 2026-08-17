@@ -1,5 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using Bindrune.Config;
 using Jotunn.Entities;
 using Jotunn.Managers;
 using UnityEngine;
@@ -52,6 +54,18 @@ namespace Bindrune.Portals
         private static CustomRPC _rpc;
         private static Coroutine _sweep;
 
+        // Kept for bindrune_net, so "has this client ever heard from the server" is answerable
+        // without trawling the log.
+        private static int _lastSentBytes;
+        private static int _lastReceivedBytes;
+        private static int _receiveCount;
+
+        /// <summary>What the sync has actually done, for <c>bindrune_net</c> to report.</summary>
+        internal static string Traffic =>
+            $"packages received: {_receiveCount}" +
+            (_receiveCount > 0 ? $" (last {_lastReceivedBytes} bytes)" : string.Empty) +
+            (_lastSentBytes > 0 ? $"; last broadcast {_lastSentBytes} bytes" : "; nothing broadcast yet");
+
         /// <summary>
         /// Every known portal. Ordered as the server found them, which is stable enough to page
         /// through and is not meant to be relied on beyond that — sort it for display.
@@ -78,6 +92,7 @@ namespace Bindrune.Portals
 
             CommandManager.Instance.AddConsoleCommand(new PortalRegistryCommand());
             CommandManager.Instance.AddConsoleCommand(new PortalAimCommand());
+            CommandManager.Instance.AddConsoleCommand(new PortalNetCommand());
         }
 
         /// <summary>Called when a world starts, from the <c>Game.Start</c> patch.</summary>
@@ -89,8 +104,14 @@ namespace Bindrune.Portals
             {
                 // Clients wait to be told. AddInitialSynchronization has already sent, or is about
                 // to send, the snapshot for this login.
+                SyncLog.Say("World started as a CLIENT. Waiting for the server's portal list; " +
+                            "nothing will be known until it arrives.");
                 return;
             }
+
+            bool dedicated = ZNet.instance != null && ZNet.instance.IsDedicated();
+            SyncLog.Say($"World started as {(dedicated ? "a DEDICATED SERVER" : "the SERVER (host or single player)")}. " +
+                        $"Sweeping every {ServerSweepSeconds}s; broadcasting only on change.");
 
             _sweep = Plugin.Instance.StartCoroutine(SweepRoutine());
         }
@@ -132,7 +153,6 @@ namespace Bindrune.Portals
             {
                 if (RebuildFromWorld())
                 {
-                    Jotunn.Logger.LogDebug($"Portal registry changed: {Ordered.Count} portal(s).");
                     Broadcast();
                 }
 
@@ -165,10 +185,18 @@ namespace Bindrune.Portals
 
                 // The server is the only thing that hands out permanent ids, which is what keeps
                 // them unique without any coordination.
+                long existing = PortalTarget.GetPid(zdo);
                 long pid = PortalTarget.EnsurePid(zdo, SweepPids.Contains);
                 if (pid == PortalTarget.NoPid)
                 {
                     continue;
+                }
+
+                if (existing != pid)
+                {
+                    SyncLog.Say(existing == PortalTarget.NoPid
+                        ? $"Minted pid {pid} for a portal at {zdo.GetPosition().x:F0},{zdo.GetPosition().z:F0}."
+                        : $"Re-minted pid {existing} -> {pid}: another portal already claimed it.");
                 }
 
                 SweepPids.Add(pid);
@@ -214,11 +242,25 @@ namespace Bindrune.Portals
             List<ZNetPeer> peers = ZNet.instance?.GetConnectedPeers();
             if (peers == null || peers.Count == 0)
             {
-                // Single player, or a dedicated server with nobody on it.
+                // Single player, or a dedicated server with nobody on it. Worth saying: on a solo
+                // test this is the line that explains why no packet ever appears.
+                SyncLog.Say($"Change not broadcast - no connected peers. {Ordered.Count} portal(s) held locally.");
                 return;
             }
 
-            _rpc?.SendPackage(peers, BuildSnapshot());
+            if (_rpc == null)
+            {
+                SyncLog.Warn("No RPC registered; connected clients will never receive the portal list.");
+                return;
+            }
+
+            ZPackage package = BuildSnapshot();
+            _lastSentBytes = package.Size();
+
+            SyncLog.Say($"Broadcasting {Ordered.Count} portal(s), {_lastSentBytes} bytes, to {peers.Count} peer(s): " +
+                        $"{string.Join(", ", peers.Select(p => p.m_uid.ToString()))}");
+
+            _rpc.SendPackage(peers, package);
         }
 
         private static ZPackage BuildSnapshotForJoiningClient()
@@ -226,7 +268,11 @@ namespace Bindrune.Portals
             // Cheap insurance against the sweep not having run since the last change: the joining
             // client's copy is the one nobody gets to correct until the next change lands.
             RebuildFromWorld();
-            return BuildSnapshot();
+
+            ZPackage package = BuildSnapshot();
+            SyncLog.Say($"A client is joining - sending the initial portal list: {Ordered.Count} portal(s), " +
+                        $"{package.Size()} bytes. This is guaranteed to arrive before they load in.");
+            return package;
         }
 
         private static ZPackage BuildSnapshot()
@@ -247,12 +293,13 @@ namespace Bindrune.Portals
 
         private static IEnumerator OnClientReceive(long sender, ZPackage package)
         {
+            int bytes = package.Size();
             byte version = package.ReadByte();
             if (version != WireVersion)
             {
                 Jotunn.Logger.LogError(
                     $"Ignoring a portal list in wire format {version}; this build speaks {WireVersion}. " +
-                    "The server and this client are running different Bindrune builds — portal " +
+                    "The server and this client are running different Bindrune builds - portal " +
                     "destinations will not work until they match.");
                 yield break;
             }
@@ -264,8 +311,27 @@ namespace Bindrune.Portals
                 received.Add(PortalRecord.ReadFrom(package));
             }
 
+            SyncLog.Say($"Received {count} portal(s) from the server (peer {sender}), {bytes} bytes, wire v{version}.");
+            _lastReceivedBytes = bytes;
+            _receiveCount++;
+
             Apply(received);
-            Jotunn.Logger.LogDebug($"Portal registry updated from the server: {count} portal(s).");
+
+            // The point of the whole exercise: portals this client has never been near. If this is
+            // zero on a client that has moved around, the registry is not doing its job however
+            // healthy the counts look.
+            if (Player.m_localPlayer == null)
+            {
+                // Expected for the join-time sync, which is guaranteed to land before the player
+                // loads in. Saying so beats reporting a distance from nowhere.
+                SyncLog.Say("Player has not spawned yet, so this is the join-time sync.");
+                yield break;
+            }
+
+            Vector3 here = Player.m_localPlayer.transform.position;
+            int distant = received.Count(p => Vector3.Distance(here, p.Position) > 200f);
+            SyncLog.Say($"Of those, {distant} are more than 200m away - portals this client could not " +
+                        "see for itself, which is what the registry exists to deliver.");
         }
 
         private static IEnumerator OnServerReceive(long sender, ZPackage package)
@@ -286,6 +352,12 @@ namespace Bindrune.Portals
 
         private static void Apply(List<PortalRecord> records)
         {
+            if (BindruneConfig.LogNetworkSync != null && BindruneConfig.LogNetworkSync.Value)
+            {
+                SyncLog.Say($"Registry {Ordered.Count} -> {records.Count} portal(s): " +
+                            SyncLog.Difference(Ordered, records));
+            }
+
             Ordered.Clear();
             ByPid.Clear();
 

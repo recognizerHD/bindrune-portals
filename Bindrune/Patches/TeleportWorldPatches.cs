@@ -162,6 +162,48 @@ namespace Bindrune.Patches
         }
 
         /// <summary>
+        /// Tells the truth about what the keys now do.
+        /// <para>
+        /// Vanilla's hover text ends with "[E] Set tag", which stopped being true the moment Interact
+        /// started opening the selector. A prompt that names the wrong action is worse than none —
+        /// it is the first thing a player reads, and it teaches them something false about a control
+        /// scheme this mod has changed out from under them.
+        /// </para>
+        /// </summary>
+        [HarmonyPostfix]
+        [HarmonyPatch(nameof(TeleportWorld.GetHoverText))]
+        private static void DescribeOurKeys(ref string __result)
+        {
+            if (string.IsNullOrEmpty(__result))
+            {
+                return;
+            }
+
+            // Vanilla builds this from "$piece_portal_settag" and localises it before we see it, so
+            // the line is matched on the localised text rather than the token.
+            string settag = Localization.instance.Localize("$piece_portal_settag");
+            if (!__result.Contains(settag))
+            {
+                // Another mod rewrote the hover text, or the token moved. Leave it alone rather than
+                // appending a second, contradictory prompt.
+                return;
+            }
+
+            string use = Localization.instance.Localize("$KEY_Use");
+
+            // Read the modifier rather than naming Shift: it is rebindable, and a prompt that is
+            // confidently wrong about a key is exactly what this patch exists to stop.
+            string alt = ZInput.instance?.GetBoundKeyString("AltPlace", true);
+            if (string.IsNullOrEmpty(alt))
+            {
+                alt = Localization.instance.Localize("$KEY_AltPlace");
+            }
+
+            __result = __result.Replace(settag, Localization.instance.Localize("$bindrune_hover_aim"))
+                       + $"\n[<color=yellow><b>{alt}+{use}</b></color>] {settag}";
+        }
+
+        /// <summary>
         /// A re-aimed portal has a target whether or not vanilla thinks it is connected. Without
         /// this it would read as unconnected and never light up.
         /// </summary>

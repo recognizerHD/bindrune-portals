@@ -28,28 +28,28 @@ namespace Bindrune.Portals
         public override string Name => "bindrune_aim";
 
         public override string Help =>
-            "bindrune_aim <destination name> — point the nearest portal at the portal with that name. " +
+            "bindrune_aim <destination name> - point the nearest portal at the portal with that name. " +
             "With no arguments, clears the target and hands the portal back to vanilla tag pairing.";
 
         protected override void Execute(string[] args, Terminal context)
         {
             if (Player.m_localPlayer == null)
             {
-                context.AddString("Bindrune: no player.");
+                Echo(context,"Bindrune: no player.");
                 return;
             }
 
             TeleportWorld portal = PortalTarget.FindNearest(Player.m_localPlayer.transform.position, Range);
             if (portal == null)
             {
-                context.AddString($"Bindrune: no portal within {Range:F0}m. Stand at the one you want to re-aim.");
+                Echo(context,$"Bindrune: no portal within {Range:F0}m. Stand at the one you want to re-aim.");
                 return;
             }
 
             ZDO zdo = PortalTarget.ZdoOf(portal);
             if (zdo == null)
             {
-                context.AddString("Bindrune: that portal is not ready yet.");
+                Echo(context,"Bindrune: that portal is not ready yet.");
                 return;
             }
 
@@ -62,7 +62,7 @@ namespace Bindrune.Portals
             if (wanted.Length == 0)
             {
                 PortalTarget.Clear(zdo);
-                context.AddString($"Bindrune: {source} now follows vanilla tag pairing again.");
+                Echo(context,$"Bindrune: {source} now follows vanilla tag pairing again.");
                 return;
             }
 
@@ -72,7 +72,7 @@ namespace Bindrune.Portals
 
             if (matches.Count == 0)
             {
-                context.AddString($"Bindrune: no portal named \"{wanted}\". Try bindrune_portals for the list.");
+                Echo(context,$"Bindrune: no portal named \"{wanted}\". Try bindrune_portals for the list.");
                 return;
             }
 
@@ -80,19 +80,19 @@ namespace Bindrune.Portals
             {
                 // Names stop carrying meaning at about a dozen portals, which is the whole argument
                 // for selecting on the map (§5). The console cannot disambiguate; the map can.
-                context.AddString($"Bindrune: {matches.Count} portals are named \"{wanted}\". Rename one, or wait for the map selector.");
+                Echo(context,$"Bindrune: {matches.Count} portals are named \"{wanted}\". Rename one, or wait for the map selector.");
                 return;
             }
 
             PortalRecord destination = matches[0];
             if (destination.Pid == PortalTarget.GetPid(zdo))
             {
-                context.AddString("Bindrune: a portal cannot point at itself.");
+                Echo(context,"Bindrune: a portal cannot point at itself.");
                 return;
             }
 
             PortalTarget.Set(zdo, destination.Pid);
-            context.AddString($"Bindrune: {source} now points at {destination}. Nothing was written to the far side — walk back and you will not return here unless it points at you.");
+            Echo(context, $"Bindrune: {source} now points at {destination}. Nothing was written to the far side - walk back and you will not return here unless it points at you.");
         }
 
         /// <summary>Tab completion over the portals we know about, which is most of the point.</summary>

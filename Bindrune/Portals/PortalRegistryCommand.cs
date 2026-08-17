@@ -35,13 +35,13 @@ namespace Bindrune.Portals
 
             if (portals.Count == 0)
             {
-                context.AddString($"Bindrune ({role}): no portals known.");
+                Echo(context,$"Bindrune ({role}): no portals known.");
                 return;
             }
 
             Vector3 from = Player.m_localPlayer != null ? Player.m_localPlayer.transform.position : Vector3.zero;
 
-            context.AddString($"Bindrune ({role}): {portals.Count} portal(s).");
+            Echo(context,$"Bindrune ({role}): {portals.Count} portal(s).");
 
             foreach (PortalRecord portal in portals.OrderBy(p => Vector3.Distance(from, p.Position)))
             {
@@ -51,7 +51,7 @@ namespace Bindrune.Portals
                         ? destination.ToString()
                         : "a portal that no longer exists";
 
-                context.AddString(
+                Echo(context,
                     $"  {portal} at {portal.Position.x:F0},{portal.Position.z:F0} " +
                     $"({Vector3.Distance(from, portal.Position):F0}m) " +
                     $"-> {target}, clearance 0x{portal.ClearanceMask:X}");

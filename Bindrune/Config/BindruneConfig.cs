@@ -58,6 +58,7 @@ namespace Bindrune.Config
         private const string SectionClearance = "2 - Clearance";
         private const string SectionCargoPreview = "3 - Cargo preview";
         private const string SectionCompatibility = "4 - Compatibility";
+        private const string SectionDiagnostics = "6 - Diagnostics";
 
         // -- Travel ----------------------------------------------------------------------------
 
@@ -86,6 +87,10 @@ namespace Bindrune.Config
 
         internal static ConfigEntry<bool> WarnOnConflictingMods { get; private set; }
         internal static ConfigEntry<string> IgnoredConflictGuids { get; private set; }
+
+        // -- Diagnostics -------------------------------------------------------------------------
+
+        internal static ConfigEntry<bool> LogNetworkSync { get; private set; }
 
         internal static void Bind(ConfigFile config)
         {
@@ -167,6 +172,19 @@ namespace Bindrune.Config
                 string.Empty,
                 new ConfigDescription("Comma-separated plugin GUIDs to leave out of the conflict warning, " +
                                       "for when the check flags something harmless. Local to you."));
+
+            // -- Diagnostics -------------------------------------------------------------------
+
+            // Defaults ON while the portal registry is still being proven against a real server.
+            // Turn it off before release: it is a development aid, and a shipped mod that narrates
+            // itself into everyone's log is a nuisance rather than a help.
+            LogNetworkSync = config.Bind(
+                SectionDiagnostics,
+                "LogNetworkSync",
+                true,
+                new ConfigDescription("Log every step of the portal registry's sync - sweeps, broadcasts, " +
+                                      "joins and receives - so a multiplayer problem can be read off one " +
+                                      "log instead of reproduced. Local to you."));
         }
 
         /// <summary>

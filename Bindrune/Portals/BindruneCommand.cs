@@ -29,12 +29,26 @@ namespace Bindrune.Portals
             }
             catch (Exception exception)
             {
-                context.AddString($"Bindrune: {Name} failed — {exception.GetType().Name}: {exception.Message}");
+                context.AddString($"Bindrune: {Name} failed - {exception.GetType().Name}: {exception.Message}");
                 Jotunn.Logger.LogError($"{Name} threw: {exception}");
             }
         }
 
         /// <summary>The command body. Anything it throws is reported to the terminal.</summary>
         protected abstract void Execute(string[] args, Terminal context);
+
+        /// <summary>
+        /// Writes a line to the console <em>and</em> the log.
+        /// <para>
+        /// Console output vanishes with the session and can only be shared as a screenshot. These
+        /// commands exist to diagnose a registry that spans two machines, so their answers belong
+        /// somewhere both ends can be compared after the fact — which means the log.
+        /// </para>
+        /// </summary>
+        protected static void Echo(Terminal context, string line)
+        {
+            context.AddString(line);
+            Jotunn.Logger.LogInfo(line);
+        }
     }
 }
