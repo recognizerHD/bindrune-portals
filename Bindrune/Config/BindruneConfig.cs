@@ -87,6 +87,7 @@ namespace Bindrune.Config
         internal static ConfigEntry<string> BonemassItems { get; private set; }
         internal static ConfigEntry<string> ModerItems { get; private set; }
         internal static ConfigEntry<string> YagluthItems { get; private set; }
+        internal static ConfigEntry<string> QueenItems { get; private set; }
         internal static ConfigEntry<string> AshenItems { get; private set; }
 
         /// <summary>The tier lists, paired with the tier they grant. Read by <c>TierMap</c>.</summary>
@@ -96,6 +97,7 @@ namespace Bindrune.Config
             yield return new KeyValuePair<Clearance, string>(Clearance.Bonemass, BonemassItems.Value);
             yield return new KeyValuePair<Clearance, string>(Clearance.Moder, ModerItems.Value);
             yield return new KeyValuePair<Clearance, string>(Clearance.Yagluth, YagluthItems.Value);
+            yield return new KeyValuePair<Clearance, string>(Clearance.Queen, QueenItems.Value);
             yield return new KeyValuePair<Clearance, string>(Clearance.Ashen, AshenItems.Value);
         }
 
@@ -185,10 +187,16 @@ namespace Bindrune.Config
             YagluthItems = config.Bind(
                 SectionClearance,
                 "YagluthItems",
-                "BlackMetalScrap,BlackMetal,chest_hildir1,DvergrNeedle,MechanicalSpring",
-                Synced("Blocked items a Yagluth's Bindrune permits. Comma-separated prefab names. " +
-                       "Carries the Mistlands' two blocked items as well: the ladder has no Mistlands " +
-                       "rune, and the alternative was gating them behind the Ashlands - see DESIGN.md §4."));
+                "BlackMetalScrap,BlackMetal,chest_hildir1",
+                Synced("Blocked items a Yagluth's Bindrune permits. Comma-separated prefab names."));
+
+            QueenItems = config.Bind(
+                SectionClearance,
+                "QueenItems",
+                "DvergrNeedle,MechanicalSpring",
+                Synced("Blocked items a Queen's Bindrune permits. Comma-separated prefab names. " +
+                       "The Mistlands does block resources, which DESIGN.md §4 originally assumed it " +
+                       "did not - the ObjectDB scan is what settled it."));
 
             AshenItems = config.Bind(
                 SectionClearance,

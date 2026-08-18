@@ -92,7 +92,8 @@ Costs are **placeholders** — they need real play to settle.
 | 2 | **Bonemass Bindrune** | Bonemass trophy · 10 iron · 20 stone | Iron scrap, iron | Swamp iron — the rule the idea started from. |
 | 3 | **Moder's Bindrune** | Moder trophy · 10 silver · 20 stone | Silver ore, silver, dragon eggs | Mountain hauls are the worst ones; this is the bindrune people want most. |
 | 4 | **Yagluth's Bindrune** | Yagluth trophy · 10 black metal · 20 stone | Black metal scrap, black metal | Plains fulings. |
-| 5 | **Ashen Bindrune** | Fader trophy · Queen trophy · 10 flametal · 20 stone | Flametal ore & bar, Ashlands blocked items | The Queen folds in here rather than getting a bindrune of her own — see the note below. |
+| 5 | **Queen's Bindrune** | Queen trophy · 3 dvergr extractors · 20 stone | Dvergr extractors, mechanical springs | Added once the `ObjectDB` scan proved the Mistlands blocks resources — see below. The cost *is* the cargo: extractors are one of the things this rune unlocks, so three of them have to reach the site by boat and cart before any of them can ever come by portal. |
+| 6 | **Ashen Bindrune** | Fader trophy · 10 flametal · 20 stone | Flametal ore & bar, Ashlands blocked items | Fader alone, now the Queen has her own rune. |
 
 ### The Mistlands does have blocked resources
 
@@ -101,16 +102,22 @@ The premise was wrong. The `ObjectDB` scan reports **26** non-teleportable items
 two of them — `DvergrNeedle` and `MechanicalSpring` — are Mistlands loot. `chest_hildir1/2/3` are
 blocked too, and belong to no metal ladder at all.
 
-Leaving the Queen folded into Ashen still holds — she is a trophy cost there — but the *items* could
-not stay with her. Ashen also costs a Fader trophy, so a player wanting to move a mechanical spring
-would first have to finish the Ashlands, a biome past the one the item comes from. Every other tier
-works the other way round: you beat the boss, then you may haul that region's goods.
+**Settled: the ladder has six rungs, and the Queen gets her own.** Folding her into Ashen was only
+ever justified by the belief that the Mistlands blocked nothing; once that was false, the folding took
+the *items* with it — and Ashen also costs a Fader trophy, so moving a mechanical spring would have
+meant finishing the Ashlands first, a biome past the one the item drops in. Every other rung works the
+other way round: beat the boss, then haul that region's goods. A Queen's Bindrune restores that, and
+Ashen drops to Fader alone, which is cleaner than a rune costing two bosses' trophies.
 
-**Settled: Mistlands loot sits under Yagluth's Bindrune.** Thematically loose — black metal is Plains,
-not Mistlands — but it is the only placement that keeps the ladder's promise, since the alternative
-was gating a Mistlands resource behind the endgame. A sixth Queen's Bindrune was considered and
-dropped: it contradicts the five-rune ladder, adds a piece to build and balance, and strips the Ashen
-rune of its Queen-trophy cost.
+It costs dvergr extractors rather than a metal, because the Mistlands has no ore and inventing one
+would make the rune read as a sixth smelter. That the cost is also one of the blocked items it
+unlocks is the sharpest expression of R4 on the whole ladder: three extractors have to make the
+journey by boat and cart before a fourth may ever come by portal. Every other rung asks for a metal
+you happen to be carrying anyway; this one asks for the exact thing you are trying to stop carrying.
+
+An earlier revision placed Mistlands loot under Yagluth's Bindrune instead. That was the right call
+while the ladder had five rungs and the wrong one the moment it had six; recorded here because the
+reasoning matters more than the conclusion.
 
 Hildir's three quest chests follow the biome of the quest that drops each — bronze to Elder's, silver
 to Moder's, brass to Yagluth's — rather than sitting at the top with the flametal. They are keepsakes,

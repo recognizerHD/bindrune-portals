@@ -32,8 +32,14 @@ namespace Bindrune.Tiers
         /// <summary>Yagluth's Bindrune — black metal scrap and black metal.</summary>
         Yagluth = 1 << 3,
 
+        /// <summary>
+        /// Queen's Bindrune — the Mistlands' guarded things. Added after the ObjectDB scan proved the
+        /// Mistlands does block resources, which §4 had assumed it did not.
+        /// </summary>
+        Queen = 1 << 4,
+
         /// <summary>Ashen Bindrune — flametal, and whatever else the Ashlands blocks.</summary>
-        Ashen = 1 << 4,
+        Ashen = 1 << 5,
     }
 
     internal static class ClearanceExtensions
@@ -49,7 +55,7 @@ namespace Bindrune.Tiers
 
         /// <summary>Every tier, for the ladder-complete case.</summary>
         internal const Clearance All = Clearance.Elder | Clearance.Bonemass | Clearance.Moder |
-                                       Clearance.Yagluth | Clearance.Ashen;
+                                       Clearance.Yagluth | Clearance.Queen | Clearance.Ashen;
 
         /// <summary>Does this mask permit <paramref name="required"/> through?</summary>
         internal static bool Permits(this Clearance mask, Clearance required)
@@ -71,6 +77,7 @@ namespace Bindrune.Tiers
                 case Clearance.Bonemass: return "Bonemass's Bindrune";
                 case Clearance.Moder: return "Moder's Bindrune";
                 case Clearance.Yagluth: return "Yagluth's Bindrune";
+                case Clearance.Queen: return "Queen's Bindrune";
                 case Clearance.Ashen: return "Ashen Bindrune";
                 default: return "no bindrune";
             }

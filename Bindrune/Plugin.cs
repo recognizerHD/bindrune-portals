@@ -1,5 +1,6 @@
 using System.Reflection;
 using BepInEx;
+using Bindrune.Bindrunes;
 using Bindrune.Compat;
 using Bindrune.Config;
 using Bindrune.Portals;
@@ -32,6 +33,7 @@ namespace Bindrune
             BindruneConfig.Bind(base.Config);
             SelectorKeys.Bind(base.Config);
             Translations.Add();
+            BindrunePieces.Register();
 
             // Before any world exists: Jotunn wires the RPC into its own Game.Start hook, and the
             // join-time synchronisation has to be registered before anyone can join.
