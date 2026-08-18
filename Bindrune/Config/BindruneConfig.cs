@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using BepInEx.Configuration;
+using Bindrune.Tiers;
 
 namespace Bindrune.Config
 {
@@ -78,6 +80,25 @@ namespace Bindrune.Config
         internal static ConfigEntry<float> AnchorRadius { get; private set; }
         internal static ConfigEntry<PortalBinding> Binding { get; private set; }
 
+        // Which blocked item belongs to which bindrune. The *list* of blocked items is never
+        // configured — it is read from ObjectDB at runtime (§4) — but the mapping has to be, because
+        // only a human can decide that a new ore belongs with iron rather than with silver.
+        internal static ConfigEntry<string> ElderItems { get; private set; }
+        internal static ConfigEntry<string> BonemassItems { get; private set; }
+        internal static ConfigEntry<string> ModerItems { get; private set; }
+        internal static ConfigEntry<string> YagluthItems { get; private set; }
+        internal static ConfigEntry<string> AshenItems { get; private set; }
+
+        /// <summary>The tier lists, paired with the tier they grant. Read by <c>TierMap</c>.</summary>
+        internal static IEnumerable<KeyValuePair<Clearance, string>> TierPrefabs()
+        {
+            yield return new KeyValuePair<Clearance, string>(Clearance.Elder, ElderItems.Value);
+            yield return new KeyValuePair<Clearance, string>(Clearance.Bonemass, BonemassItems.Value);
+            yield return new KeyValuePair<Clearance, string>(Clearance.Moder, ModerItems.Value);
+            yield return new KeyValuePair<Clearance, string>(Clearance.Yagluth, YagluthItems.Value);
+            yield return new KeyValuePair<Clearance, string>(Clearance.Ashen, AshenItems.Value);
+        }
+
         // -- Cargo preview ---------------------------------------------------------------------
 
         internal static ConfigEntry<bool> ShowBlockedCargoOverlay { get; private set; }
@@ -138,6 +159,43 @@ namespace Bindrune.Config
                 Synced("Nearest: an anchor grants its clearance to the single closest portal in range. " +
                        "Re-aiming reaches everywhere from one portal, so a site only needs one. " +
                        "AllInRadius: every portal in range, for a base spread across more than one."));
+
+            // Prefab names, not display names, because prefab names are what ObjectDB is keyed on and
+            // what survives a language change. These defaults are a starting guess: whatever they get
+            // wrong shows up as an "unclassified" warning naming the prefab, which is the intended way
+            // to find out rather than a failure.
+            ElderItems = config.Bind(
+                SectionClearance,
+                "ElderItems",
+                "CopperOre,Copper,TinOre,Tin,Bronze,CopperScrap,BronzeScrap,chest_hildir3",
+                Synced("Blocked items an Elder's Bindrune permits. Comma-separated prefab names."));
+
+            BonemassItems = config.Bind(
+                SectionClearance,
+                "BonemassItems",
+                "IronScrap,Iron,IronOre,Ironpit",
+                Synced("Blocked items a Bonemass's Bindrune permits. Comma-separated prefab names."));
+
+            ModerItems = config.Bind(
+                SectionClearance,
+                "ModerItems",
+                "SilverOre,Silver,DragonEgg,chest_hildir2",
+                Synced("Blocked items a Moder's Bindrune permits. Comma-separated prefab names."));
+
+            YagluthItems = config.Bind(
+                SectionClearance,
+                "YagluthItems",
+                "BlackMetalScrap,BlackMetal,chest_hildir1,DvergrNeedle,MechanicalSpring",
+                Synced("Blocked items a Yagluth's Bindrune permits. Comma-separated prefab names. " +
+                       "Carries the Mistlands' two blocked items as well: the ladder has no Mistlands " +
+                       "rune, and the alternative was gating them behind the Ashlands - see DESIGN.md §4."));
+
+            AshenItems = config.Bind(
+                SectionClearance,
+                "AshenItems",
+                "FlametalOre,Flametal,FlametalOreNew,FlametalNew,CharredCogwheel",
+                Synced("Blocked items an Ashen Bindrune permits. Comma-separated prefab names. " +
+                       "Anything blocked and unlisted lands here anyway, by design."));
 
             // -- Cargo preview -----------------------------------------------------------------
 

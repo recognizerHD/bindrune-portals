@@ -92,7 +92,33 @@ Costs are **placeholders** — they need real play to settle.
 | 2 | **Bonemass Bindrune** | Bonemass trophy · 10 iron · 20 stone | Iron scrap, iron | Swamp iron — the rule the idea started from. |
 | 3 | **Moder's Bindrune** | Moder trophy · 10 silver · 20 stone | Silver ore, silver, dragon eggs | Mountain hauls are the worst ones; this is the bindrune people want most. |
 | 4 | **Yagluth's Bindrune** | Yagluth trophy · 10 black metal · 20 stone | Black metal scrap, black metal | Plains fulings. |
-| 5 | **Ashen Bindrune** | Fader trophy · Queen trophy · 10 flametal · 20 stone | Flametal ore & bar, Ashlands blocked items | The Mistlands has no blocked resources, so the Queen folds in here rather than being skipped. |
+| 5 | **Ashen Bindrune** | Fader trophy · Queen trophy · 10 flametal · 20 stone | Flametal ore & bar, Ashlands blocked items | The Queen folds in here rather than getting a bindrune of her own — see the note below. |
+
+### The Mistlands does have blocked resources
+
+This document claimed it didn't, and used that to justify folding the Queen into the Ashen Bindrune.
+The premise was wrong. The `ObjectDB` scan reports **26** non-teleportable items on game 0.221.12, and
+two of them — `DvergrNeedle` and `MechanicalSpring` — are Mistlands loot. `chest_hildir1/2/3` are
+blocked too, and belong to no metal ladder at all.
+
+Leaving the Queen folded into Ashen still holds — she is a trophy cost there — but the *items* could
+not stay with her. Ashen also costs a Fader trophy, so a player wanting to move a mechanical spring
+would first have to finish the Ashlands, a biome past the one the item comes from. Every other tier
+works the other way round: you beat the boss, then you may haul that region's goods.
+
+**Settled: Mistlands loot sits under Yagluth's Bindrune.** Thematically loose — black metal is Plains,
+not Mistlands — but it is the only placement that keeps the ladder's promise, since the alternative
+was gating a Mistlands resource behind the endgame. A sixth Queen's Bindrune was considered and
+dropped: it contradicts the five-rune ladder, adds a piece to build and balance, and strips the Ashen
+rune of its Queen-trophy cost.
+
+Hildir's three quest chests follow the biome of the quest that drops each — bronze to Elder's, silver
+to Moder's, brass to Yagluth's — rather than sitting at the top with the flametal. They are keepsakes,
+and a decorative chest being harder to move than a bar of black metal reads as an oversight rather
+than a rule.
+
+None of this is code. The tier of any prefab is a config line, so all of it can be re-argued in §10
+against real play without touching the mod.
 
 ### Do not hand-maintain the item list
 
