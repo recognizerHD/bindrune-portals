@@ -94,6 +94,9 @@ namespace Bindrune.Portals
             CommandManager.Instance.AddConsoleCommand(new PortalAimCommand());
             CommandManager.Instance.AddConsoleCommand(new PortalNetCommand());
             CommandManager.Instance.AddConsoleCommand(new Tiers.BlockedItemsCommand());
+            CommandManager.Instance.AddConsoleCommand(new Tiers.PrefabSearchCommand());
+            CommandManager.Instance.AddConsoleCommand(new Tiers.PrefabInspectCommand());
+            CommandManager.Instance.AddConsoleCommand(new Tiers.PrefabPreviewCommand());
         }
 
         /// <summary>Called when a world starts, from the <c>Game.Start</c> patch.</summary>
