@@ -11,16 +11,21 @@ build order.
 
 ## Status
 
-Pre-alpha, but playable. **Phase 1 is done:** interact with a portal, pick any portal in the world off
-the map, and it points there for everyone until someone re-aims it. Walking in travels. Pointers are
-one-way, so a portal you aim at your base does not automatically bring you home.
+Pre-alpha, but the whole idea is playable. **Phases 1 and 2 are done.** Interact with a portal, pick
+any portal in the world off the map, and it points there for everyone until someone re-aims it.
+Pointers are one-way. Build a bindrune next to a portal and that portal will accept the metals that
+rune covers — and refuse the rest, by name:
 
-**The bindrunes do not exist yet.** Phase 2 is what makes this more than another any-portal mod, and
-it has not been started — nothing restricts what you carry, so today this behaves like a
-destination-selector mod with an unusual one-way rule.
+> Iron cannot enter "Copper Mine" — no Bonemass's Bindrune there.
 
-Also not yet tested with a second player connected. Everything works in single player; the
-server-to-client sync path has been written and instrumented but never run for real.
+Only the destination is ever checked, so an outpost with no bindrunes can send ore to your base
+forever and never receive any. That asymmetry is the point of the mod.
+
+What is missing is explanation rather than mechanism. A bindrune planted just out of range does
+nothing and does not say so, and you find out what a destination refuses at the doorway rather than
+while packing. Both are the next phase.
+
+Not yet tested over a network with clearance in play.
 
 ### Controls
 

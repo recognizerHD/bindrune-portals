@@ -22,21 +22,25 @@ the repo.
 
 ## Current state
 
-**Phase 1 is built and verified in game.** Phase 2 has not been started.
+**Phases 1 and 2 are built and verified in game.** Both features work: any-portal travel, and
+clearance decided by the destination.
 
-Working: the server-swept portal registry (`Portals/`), `bindrune_pid` identity that survives a
-relog, one-way targets honoured by a `TeleportWorld.Teleport` prefix, and the map-and-list
-destination selector (`UI/`) with rebindable keyboard and gamepad keys. Vanilla tag pairing still
-works untouched on any portal nobody has re-aimed.
+Working: the server-swept portal registry (`Portals/`), `bindrune_pid` identity that survives a relog,
+one-way targets honoured by a `TeleportWorld.Teleport` prefix, the map-and-list destination selector
+(`UI/`), the `ObjectDB` tier map (`Tiers/`), six bindrune pieces cloned from a dungeon prop
+(`Bindrunes/`), the ten-second site sweep that turns runes standing near a portal into that portal's
+mask, and the travel gate with named refusals (`Travel/`). Vanilla tag pairing still works untouched
+on any portal nobody has re-aimed, and goes through the same clearance gate.
 
-Three console commands, all of which echo to the log: `bindrune_portals` lists what this instance
-knows, `bindrune_aim` re-aims without the UI, `bindrune_net` reports the sync's state. Reach for
-those before inferring anything about a running game — several rounds were lost this way already.
+Five console commands, all echoing to the log: `bindrune_portals`, `bindrune_aim`, `bindrune_net`,
+`bindrune_items`, `bindrune_prefabs` / `bindrune_inspect` / `bindrune_preview`. Reach for those before
+inferring anything about a running game — several rounds were lost this way already.
 
-**The client half of the sync has never run**, because single player is its own server. That is the
-first thing to test when a second machine is available.
+**Never tested over a real network with masks in play.** The registry sync itself was verified on two
+machines, but that predates clearance, so no client has yet received a non-zero mask. That is Phase 5.
 
-Still unwritten: everything under `Tiers/`, `Bindrunes/`, `Clearance/`, and the inventory overlay.
+Still unwritten: build-mode feedback, the inventory overlay, clearance chips, and everything in §8's
+phases 3 to 5.
 
 ## Non-negotiable invariants
 

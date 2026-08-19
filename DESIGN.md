@@ -3,10 +3,13 @@
 > A Valheim mod. Travel to any portal by name; what you may **carry** through is decided by the
 > bindrunes standing at the **destination**, and every bindrune is bought with a boss trophy.
 
-Status: **Draft 3. Phase 1 is built and playable** — the portal registry, one-way targets that survive
-a relog, and destination selection on the map. Phase 2, the bindrunes themselves and the clearance
-check that is the reason the mod exists, has not been started. §12 is now split into what has been
-read off the shipped assemblies and what still needs the game running.
+Status: **Draft 4. Phases 1 and 2 are built and playable.** You can pick any portal in the world off
+the map, and what you may carry through is decided by the bindrunes standing at the far end. Both
+features work in game; §12 is split into what has been read off the shipped assemblies and what still
+needs the game running.
+
+What is left is feedback rather than mechanism: telling a player what the rules are doing before they
+walk into one (§8, phases 3 and 5).
 
 ---
 
@@ -245,7 +248,6 @@ its portal: nearest within range.
 - Filter by **"only destinations that accept my cargo"**. Still meaningful under a shared target: you
   re-aim because you intend to travel with what you are holding.
 - Sort/filter by distance, name and favourites for the list view that backs the map.
-- `DiscoveredPortalsOnly` — a portal is selectable only once you've stood at it.
 - `HidePortalNames` option, as Handy portals has.
 - Keep vanilla tag pairing as the fallback when no explicit target is set, so an unmodded save
   behaves normally.
@@ -326,13 +328,20 @@ player stood at that portal and cached with the portal record. Phase 3 nicety, n
 | # | Phase | Ships | Standalone? |
 |---|---|---|---|
 | 1 | **Destination selector** ✅ | Portal registry, server sync, the one-way target on the portal ZDO, and the map selector with keyboard *and* gamepad nav. | Yes — and it's the must-have. |
-| 2 | **Bindrunes** | Six pieces, the mask, server recompute, the destination check, named refusals on entry. | Yes. The mod's reason to exist. |
-| 3 | **Fusion & polish** | The blocked-cargo overlay on inventory icons, clearance chips in the selector, cargo filter, portal rune tinting by tier, destination thumbnails. | Needs 1 + 2. |
+| 2 | **Bindrunes** ✅ | Six pieces, the mask, server recompute, the destination check, named refusals on entry. | Yes. The mod's reason to exist. |
+| 3 | **Telling the player** | Build-mode feedback (§5) — which portal a rune reached, and its range. The blocked-cargo overlay on inventory icons. Clearance chips in the selector, cargo filter, destination thumbnails. | Needs 1 + 2. |
 | 4 | **Seamless transit** | Approach-time gating, rune curtain, preload, fade. Default off. | Optional — cut without regret if it fights the game. |
+| 5 | **Release readiness** | Refusals and piece text through the localisation layer. Masks verified over a real network, two machines. `LogNetworkSync` defaulted off, *after* that verification and not before. | The last things between a working mod and a shippable one. |
 
-Phase 2 is playable on the entry message alone, but it is the *worse* half of §5's two layers — you
-learn at the threshold instead of while packing. If Phase 3 slips, pull the overlay forward out of it
-rather than shipping Phase 2 as the long-term state.
+Phase 2 shipped playable on the entry message alone, which is the *worse* half of §5's two layers —
+you learn at the threshold instead of while packing. That is why Phase 3 is named for what it does
+rather than called polish: the mod currently enforces two rules it barely explains. A bindrune planted
+eleven metres from a portal does nothing and says nothing, and the only way to discover it is to haul
+ore and be refused.
+
+Phase 5 exists because "it works on my machine" is the one claim this project has repeatedly had to
+withdraw. `LogNetworkSync` stays on until masks have been watched crossing a real network, and is
+turned off in the same change that confirms they do.
 
 ### What Phase 1 actually shipped
 
@@ -342,9 +351,9 @@ tag pairing intact as the fallback, the map-and-list selector with rebindable ke
 bindings, `ReaimPermission`, `HidePortalNames`, and the `bindrune_portals` / `bindrune_aim` /
 `bindrune_net` commands.
 
-Deferred from §5 rather than forgotten: `DiscoveredPortalsOnly` and favourites, both of which need
-per-player state that nothing else yet requires, and the cargo filter, which has nothing to filter on
-until Phase 2 produces masks. Clearance chips are Phase 3 by design.
+Deferred from §5 rather than forgotten: favourites, which needs per-player state nothing else yet
+requires, and the cargo filter, which had nothing to filter on until Phase 2 produced masks.
+Clearance chips are Phase 3 by design.
 
 **Not yet proven: the client half of the sync.** Single player is its own server, so
 `AddInitialSynchronization` and the broadcast have never run. `bindrune_net` exists to settle it in
@@ -626,6 +635,15 @@ server.
 
 Things deliberately set aside. Nothing here is scheduled; they are recorded so the reasoning is not
 lost and so nobody re-derives them from scratch.
+
+### Discovered portals only
+
+A setting that made a portal selectable only once you had stood at it, so the map could not hand you
+somewhere you had never been. Cut before it was built: this is a mod for playing with friends, and the
+shared world is the point. Someone joining a server and being able to reach the base they have been
+invited to is the behaviour you want, not a leak. It also needs per-player state nothing else requires.
+
+Worth reviving only if a public server ever wants portal discovery as a progression gate.
 
 ### Station mode — per-player, per-trip destinations
 

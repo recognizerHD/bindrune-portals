@@ -66,7 +66,6 @@ namespace Bindrune.Config
         // There is no SelectionMode entry: rewire is the only travel model being built. Station is
         // recorded in DESIGN.md §13 as a future idea, and a config switch with one working value is
         // just a trap for whoever flips it.
-        internal static ConfigEntry<bool> DiscoveredPortalsOnly { get; private set; }
         internal static ConfigEntry<bool> HidePortalNames { get; private set; }
         internal static ConfigEntry<ReaimPermission> Reaim { get; private set; }
 
@@ -116,12 +115,6 @@ namespace Bindrune.Config
 
         internal static void Bind(ConfigFile config)
         {
-            DiscoveredPortalsOnly = config.Bind(
-                SectionTravel,
-                "DiscoveredPortalsOnly",
-                false,
-                Synced("A portal can only be selected as a destination once you have stood at it."));
-
             HidePortalNames = config.Bind(
                 SectionTravel,
                 "HidePortalNames",
@@ -142,8 +135,11 @@ namespace Bindrune.Config
                 SectionClearance,
                 "StrictLadder",
                 false,
-                Synced("Require the lower bindrunes before a higher one can be built. Off by default: " +
-                       "per-tier flags are independent (R1), so a site can accept silver but refuse iron."));
+                Synced("A site's clearance stops at its first missing rung: with Elder's and Moder's but " +
+                       "no Bonemass's, it accepts copper and refuses silver as well as iron. Off by " +
+                       "default, and off is the shipped rule - per-tier flags are independent (R1), so " +
+                       "a site can accept silver while refusing iron. Nothing stops you building any " +
+                       "rune either way; this only changes what the ones you built are worth."));
 
             BindruneRadius = config.Bind(
                 SectionClearance,
