@@ -5,24 +5,23 @@ using Bindrune.Tiers;
 namespace Bindrune.Config
 {
     /// <summary>
-    /// Which portals an anchor grants its clearance to. See DESIGN.md R2.
+    /// Which portals a bindrune grants its clearance to. See DESIGN.md R2.
     /// <para>
-    /// Only the anchor-to-portal step is configurable; bindrunes always have to stand within the
-    /// anchor's radius. Both options are resolved from position on the server's sweep, so neither
-    /// stores a reference that can go stale when a portal is rebuilt.
+    /// Both options are resolved from position on the server's sweep, so neither stores a reference
+    /// that can go stale when a portal is rebuilt.
     /// </para>
     /// </summary>
     internal enum PortalBinding
     {
         /// <summary>
-        /// The single closest portal within the anchor's radius. Re-aiming reaches every destination
-        /// from one portal, so a site only ever needs one and there is nothing to disambiguate — and
-        /// two portals at one location can carry different clearance.
+        /// The single closest portal in range. Re-aiming reaches every destination from one portal,
+        /// so a site only ever needs one and there is nothing to disambiguate — and two portals at one
+        /// location can carry different clearance.
         /// </summary>
         Nearest,
 
         /// <summary>
-        /// Every portal within the anchor's radius, for a base spread across more than one portal.
+        /// Every portal in range, for a base spread across more than one portal.
         /// </summary>
         AllInRadius,
     }
@@ -77,7 +76,7 @@ namespace Bindrune.Config
         // no bindrunes could not send ore anywhere, which kills the one-way outpost the whole design is
         // built on (R3). A setting that can switch off the central mechanic is not worth having.
         internal static ConfigEntry<bool> StrictLadder { get; private set; }
-        internal static ConfigEntry<float> AnchorRadius { get; private set; }
+        internal static ConfigEntry<float> BindruneRadius { get; private set; }
         internal static ConfigEntry<PortalBinding> Binding { get; private set; }
 
         // Which blocked item belongs to which bindrune. The *list* of blocked items is never
@@ -146,19 +145,19 @@ namespace Bindrune.Config
                 Synced("Require the lower bindrunes before a higher one can be built. Off by default: " +
                        "per-tier flags are independent (R1), so a site can accept silver but refuse iron."));
 
-            AnchorRadius = config.Bind(
+            BindruneRadius = config.Bind(
                 SectionClearance,
-                "AnchorRadius",
+                "BindruneRadius",
                 10f,
-                Synced("Metres from a Wayfarer's Anchor within which bindrunes count toward the site, " +
-                       "and the range the anchor searches for the portal(s) it grants clearance to (R2).",
+                Synced("How far a bindrune reaches to find the portal it grants clearance to (R2). " +
+                       "A rune outside every portal's reach does nothing at all.",
                     new AcceptableValueRange<float>(2f, 64f)));
 
             Binding = config.Bind(
                 SectionClearance,
                 "PortalBinding",
                 PortalBinding.Nearest,
-                Synced("Nearest: an anchor grants its clearance to the single closest portal in range. " +
+                Synced("Nearest: a bindrune grants its clearance to the single closest portal in range. " +
                        "Re-aiming reaches everywhere from one portal, so a site only needs one. " +
                        "AllInRadius: every portal in range, for a base spread across more than one."));
 

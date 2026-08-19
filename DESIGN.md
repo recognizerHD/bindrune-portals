@@ -34,10 +34,9 @@ collision made everything ambiguous.
 
 | Term | Means |
 |---|---|
-| **Bindrune** | One of our five clearance pieces — Elder's, Bonemass's, Moder's, Yagluth's, Ashen. Built from a boss trophy plus the metal it unlocks. |
-| **Wayfarer's Anchor** | The tier-0 piece that defines a site. Not itself a bindrune: it opens nothing and only marks where a site is. |
-| **Site** | An anchor, the bindrunes standing around it, and the portal it binds to. |
-| **Clearance mask** | The per-tier flags a site grants, mirrored onto its portal. |
+| **Bindrune** | One of our six clearance pieces — Elder's, Bonemass's, Moder's, Yagluth's, Queen's, Ashen. Built from a boss trophy plus the metal it unlocks. |
+| **Site** | A portal and the bindrunes standing near it. |
+| **Clearance mask** | The per-tier flags the bindrunes at a site grant, written onto its portal. |
 | **Guard stone** | Valheim's *vanilla* piece — the one the game labels "Ward". Ours never touch it, except that `ReaimPermission` can read its permitted-players list (§5). |
 
 ---
@@ -72,7 +71,7 @@ way you walked in, with a configurable fade.
 | # | Rule |
 |---|---|
 | **R1** | Each portal carries a **clearance mask** — independent per-tier flags, not a single level. A site with Elder's + Moder's bindrunes accepts copper and silver but still refuses iron. Nothing forces you up the ladder in order. |
-| **R2** | A site is defined by a **Wayfarer's Anchor**. Two separate relationships, and only the second is configurable: bindrunes must stand within the anchor's radius (default 10 m), and the anchor grants its mask to the **nearest portal** within that radius. `PortalBinding = AllInRadius` instead grants it to every portal in range, for a base spread across two portals. |
+| **R2** | A site is **a portal and the bindrunes standing near it**. Each bindrune grants its tier to the **nearest portal** within `BindruneRadius` (default 10 m); `PortalBinding = AllInRadius` instead grants it to every portal in range, for a base spread across two portals. One relationship, resolved from position, storing nothing. |
 | **R3** | Only the **destination** is checked — always, with no setting to change it. You need a bindrune at every site you want to send resources *to*; where you set out from is never asked about. |
 | **R4** | Every bindrune costs that biome boss's **trophy** plus a little of **the metal it unlocks**. You always earn the shortcut by making the haul the hard way once. |
 | **R5** | Trophies are farmable by re-summoning, so the ladder is a **cost curve, not a wall**. |
@@ -85,10 +84,15 @@ way you walked in, with a configurable fade.
 
 Costs are **placeholders** — they need real play to settle.
 
+There is no anchor. An earlier draft had a tier-0 **Wayfarer's Anchor** that granted nothing and was
+required before any bindrune counted — it gave Eikthyr a job and made founding a site deliberate.
+Both are real, and neither was worth the cost: a piece that opens nothing is a tax on starting, and a
+player who has just killed the Elder and hauled ten copper across the map does not need a second
+errand before their bindrune works. Cutting it also collapses R2 from two relationships to one.
+
 | # | Piece | Cost | Opens | Why that boss |
 |---|---|---|---|---|
-| 0 | **Wayfarer's Anchor** | Eikthyr trophy · 20 stone · 4 core wood | Nothing. Prerequisite for every bindrune at the site. | Gives Eikthyr a job; makes founding a site deliberate. |
-| 1 | **Elder's Bindrune** | Elder trophy · 10 bronze · 20 stone | Copper ore & bar, tin ore & bar, bronze | Black Forest metals. |
+| 1 | **Elder's Bindrune** | Elder trophy · 10 copper · 20 stone | Copper ore & bar, tin ore & bar, bronze | Black Forest metals. |
 | 2 | **Bonemass Bindrune** | Bonemass trophy · 10 iron · 20 stone | Iron scrap, iron | Swamp iron — the rule the idea started from. |
 | 3 | **Moder's Bindrune** | Moder trophy · 10 silver · 20 stone | Silver ore, silver, dragon eggs | Mountain hauls are the worst ones; this is the bindrune people want most. |
 | 4 | **Yagluth's Bindrune** | Yagluth trophy · 10 black metal · 20 stone | Black metal scrap, black metal | Plains fulings. |
@@ -230,7 +234,7 @@ Three constraints on the first layer, all of them load-bearing:
   destination mask. Flipping `m_shared.m_teleportable` to drive a UI state would leak into tooltips
   and every other mod, which is the failure mode §6 calls out.
 
-Where two portals are close together, "the portal you are near" resolves the same way an anchor picks
+Where two portals are close together, "the portal you are near" resolves the same way a bindrune picks
 its portal: nearest within range.
 
 ### Selector requirements
@@ -251,10 +255,10 @@ its portal: nearest within range.
 Auto-binding removes the binding UI, but it also removes the player's certainty about what the game
 just decided for them. Two questions need answering without a menu:
 
-- **Range** — which bindrunes count toward this anchor. Otherwise a bindrune planted 11 m out silently does
-  nothing, and the player has no way to find out except by hauling ore and being refused.
-- **Connection** — which portal the anchor bound to. With two portals 30 m apart, nothing on screen
-  says which one just became iron-capable.
+- **Range** — which portal a bindrune reaches. Otherwise a rune planted 11 m out silently does nothing,
+  and the player has no way to find out except by hauling ore and being refused.
+- **Connection** — which portal a rune bound to. With two portals 30 m apart, nothing on screen says
+  which one just became iron-capable.
 
 Reuse the existing in-game guard stone effect for both rather than authoring new art — that keeps this
 inside the §11 rule about cloning prefabs instead of shipping assets. The prefab and its component
@@ -266,8 +270,8 @@ names are unverified; see §12.
 
 | Concern | Approach |
 |---|---|
-| **Stack** | BepInEx 5 + HarmonyX. Jotunn for custom pieces, localisation, config sync. The anchor and five bindrunes are custom build pieces — exactly `PieceManager`'s job. |
-| **Where clearance lives** | An int bitmask on the anchor's ZDO, **mirrored onto every portal ZDO in radius** (`bindrune_mask`). The mirror is **not optional**: a traveling client can read the destination portal's ZDO but cannot see bindrunes 2 km away. |
+| **Stack** | BepInEx 5 + HarmonyX. Jotunn for custom pieces, localisation, config sync. The six bindrunes are custom build pieces — exactly `PieceManager`'s job. |
+| **Where clearance lives** | An int bitmask written straight onto the portal's ZDO (`bindrune_mask`), recomputed from the bindrunes standing in range. Writing it to the portal is **not optional**: a traveling client can read the destination portal's ZDO but cannot see bindrunes 2 km away. |
 | **Who computes it** | The **server**. It holds every ZDO, so it recomputes a site's mask on bindrune place/destroy and on a slow sweep, then writes the portals. Clients never author a mask. This also self-heals staleness when a bindrune is destroyed while the site is unloaded. |
 | **Portal registry** | Server-authoritative list from `ZDOMan.GetPortals()`, pushed to clients on join and on change. **Each record carries that portal's clearance mask**, not just name, id and position — see the row below for why. `GetPortals()` hands back the live list, so read it and never mutate it. |
 | **Where the target lives** | Our own `bindrune_target` ZDOID key on the portal's ZDO, with a prefix on `TeleportWorld.Teleport` preferring it over the vanilla destination. **Not** the vanilla `ConnectionType.Portal` connection: the server rebuilds those from tag matches every 5 seconds and would erase a one-way target almost immediately (§12). Leaving that pass alone is also what gives §5's vanilla-tag fallback for free — a portal we never re-aimed still pairs the way it always did. |
@@ -276,7 +280,7 @@ names are unverified; see §12.
 | **What not to do** | Do **not** flip `m_shared.m_teleportable` on shared item data to let ore through. It's shared state — it leaks into tooltips, other mods, and anything else that asks. Several existing portal mods take that shortcut and it's why they conflict. |
 | **Trust model** | Player inventories are client-side in Valheim, so cargo checks are client-trusting — same as vanilla. The server can authoritatively own **clearance**, never **cargo**. Put that in the readme: this is a rule system for a co-op server, not anti-cheat. |
 | **Install** | Server **and** every client. Config syncs from the server so tiers can't be edited locally. |
-| **Uninstalling** | Extra ZDO keys are harmless to a vanilla client. Custom pieces are not — remove the mod and anchors and bindrunes vanish. Normal for custom-piece mods; warn anyway. |
+| **Uninstalling** | Extra ZDO keys are harmless to a vanilla client. Custom pieces are not — remove the mod and every bindrune vanishes. Normal for custom-piece mods; warn anyway. |
 | **Known conflicts** | Anything that rewrites teleport rules: Valheim Plus, Advanced Portals, Progression Portals, Gate of Ore-thority, unrestricted-portal mods. Detect by GUID at startup and log a loud warning rather than fighting over patches. |
 
 ---
@@ -291,6 +295,16 @@ to refuse you in.
 than travels, so *every* trip is a walk-in and there is never a dialog to carry the refusal. The
 approach-time warning below is the answer to the base game loop, not just to seamless transit — which
 is an argument for pulling some of it earlier than Phase 4.
+
+**Part of this landed in Phase 2, because not landing it was a defect.** Vanilla's `UpdatePortal`
+already dims a portal's runes when the nearby player carries something non-teleportable — the channel
+this section asks for has always existed. Once Phase 2 changed the *rule* without changing the
+*indicator*, the glow started lying: carrying copper darkened every portal in the world, including
+those whose destinations would accept it. An indicator that is wrong is worse than none, because
+players trust it before they learn its limits. The glow now answers per-destination, sharing its
+destination resolution with the travel gate so the two can never disagree.
+
+What remains here is the louder half: the red flare, the rune curtain, and the HUD line.
 
 Fix — and it improves the base experience too:
 
@@ -312,7 +326,7 @@ player stood at that portal and cached with the portal record. Phase 3 nicety, n
 | # | Phase | Ships | Standalone? |
 |---|---|---|---|
 | 1 | **Destination selector** ✅ | Portal registry, server sync, the one-way target on the portal ZDO, and the map selector with keyboard *and* gamepad nav. | Yes — and it's the must-have. |
-| 2 | **Anchors & bindrunes** | Six pieces, the mask, server recompute, the destination check, named refusals on entry. | Yes. The mod's reason to exist. |
+| 2 | **Bindrunes** | Six pieces, the mask, server recompute, the destination check, named refusals on entry. | Yes. The mod's reason to exist. |
 | 3 | **Fusion & polish** | The blocked-cargo overlay on inventory icons, clearance chips in the selector, cargo filter, portal rune tinting by tier, destination thumbnails. | Needs 1 + 2. |
 | 4 | **Seamless transit** | Approach-time gating, rune curtain, preload, fade. Default off. | Optional — cut without regret if it fights the game. |
 
@@ -346,7 +360,7 @@ one command per machine — see §6.
 |---|---|
 | Station or rewire? | **Rewire, selected on the map** (§5). A portal's destination belongs to the portal and applies to everyone; walk in to travel, interact to re-aim. Station is deferred to §13 and is not being built. |
 | Independent per-tier flags, or a strict ladder (tier 3 requires 1 + 2)? | **Independent flags.** `StrictLadder` opts into requiring the lower bindrunes first. |
-| Anchor-and-radius, or bind each bindrune to one portal? | **Auto-bind to the nearest portal in range** (`PortalBinding = Nearest`), no manual binding UI. `AllInRadius` covers every portal at the site. |
+| Anchor-and-radius, or bind each bindrune to one portal? | **Auto-bind each rune to the nearest portal in range** (`PortalBinding = Nearest`), no anchor and no manual binding UI. `AllInRadius` covers every portal at the site. |
 | Does the source ever matter? | **No — never, and there is no setting.** R3 rewritten to say so. |
 | Own the destination list, or build on XPortal (GPLv3)? | **Own it.** Inspiration only, no copied code, MIT preserved. §11 spells out where the line sits. |
 | Who may re-aim a portal? | **`ReaimPermission`, default `Anyone`**, with `GuardStonePermitted` / `Admin` — see §5. |
@@ -355,8 +369,8 @@ one command per machine — see §6.
 
 One portal per site is what makes the binding default reasonable, and that survives the move to
 rewire: re-aiming reaches every destination from a single portal, so a site needs exactly one and
-there is nothing to disambiguate. Binding also dissolves the overlapping-anchor question — nearest
-wins, deterministically — and gives back the "loading dock" pattern (two portals at one location with
+there is nothing to disambiguate. Binding also dissolves the overlapping-site question — nearest wins,
+deterministically — and gives back the "loading dock" pattern (two portals at one location with
 different clearance) that a site-wide radius cannot express.
 
 The caveat is contention: if re-aiming fights push players into building hubs after all, `Nearest`
@@ -379,7 +393,7 @@ and stores nothing that can rot.
 ### Still open
 
 None of the structural questions. What is left is numbers, not shape: the ladder costs in §4 are
-placeholders and the anchor radius default is a guess, and both want real play rather than more
+placeholders and the bindrune radius default is a guess, and both want real play rather than more
 argument. §10 is where that lands.
 
 ---
@@ -456,7 +470,7 @@ Two things constrain the choice:
      repo taken down. Reference game assemblies from a local install path via an env var and
      `.gitignore` them.
    - Prefer **cloning existing in-game prefabs at runtime** (a rune stone, a standing stone) for the
-     anchor and bindrunes over shipping custom models. Cheaper, always matches the art style, and there
+     bindrunes over shipping custom models. Cheaper, always matches the art style, and there
      is nothing to license.
    - If you do ship original models/icons in an asset bundle, license the art separately in the
      README — CC BY 4.0 is the usual pick — because MIT's "software" wording maps badly onto art.

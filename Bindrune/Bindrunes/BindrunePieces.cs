@@ -9,16 +9,12 @@ using UnityEngine;
 namespace Bindrune.Bindrunes
 {
     /// <summary>
-    /// The six buildable pieces: a Wayfarer's Anchor and the five bindrunes (DESIGN.md §4).
+    /// The six bindrunes (DESIGN.md §4).
     /// <para>
     /// All six are clones of <c>Pickable_BlackCoreStand</c> with its <c>Pickable</c> stripped and the
     /// core tinted, so nothing is shipped as art and nothing needs relicensing (§11). Sharing one
-    /// silhouette is a design choice rather than a shortcut: five stands differing only in the colour
+    /// silhouette is a design choice rather than a shortcut: six stands differing only in the colour
     /// of what they hold read as a matched set, and a player learns the shape once.
-    /// </para>
-    /// <para>
-    /// The anchor is that same shape, near-unlit. It grants no clearance itself — it only marks where
-    /// a site is — so a dark core says exactly the right thing about it.
     /// </para>
     /// </summary>
     internal static class BindrunePieces
@@ -27,7 +23,6 @@ namespace Bindrune.Bindrunes
         private const string CloneSource = "Pickable_BlackCoreStand";
 
         // Trophy prefab names, read off a running game rather than remembered.
-        private const string TrophyEikthyr = "TrophyEikthyr";
         private const string TrophyElder = "TrophyTheElder";
         private const string TrophyBonemass = "TrophyBonemass";
         private const string TrophyModer = "TrophyDragonQueen";
@@ -54,19 +49,6 @@ namespace Bindrune.Bindrunes
 
         private static readonly List<PieceSpec> Specs = new List<PieceSpec>
         {
-            new PieceSpec
-            {
-                Name = "bindrune_anchor",
-                Display = "Wayfarer's Anchor",
-                Description = "Marks a site. Grants no clearance itself, but no bindrune counts without one.",
-                Tint = new Color(0.35f, 0.35f, 0.40f),
-                Requirements = new[]
-                {
-                    new RequirementConfig { Item = TrophyEikthyr, Amount = 1, Recover = true },
-                    new RequirementConfig { Item = "Stone", Amount = 20, Recover = true },
-                    new RequirementConfig { Item = "RoundLog", Amount = 4, Recover = true },
-                },
-            },
             new PieceSpec
             {
                 Name = "bindrune_elder",
@@ -154,7 +136,7 @@ namespace Bindrune.Bindrunes
             },
         };
 
-        /// <summary>Maps a built piece back to the clearance it grants. The anchor grants nothing.</summary>
+        /// <summary>Maps a built piece back to the clearance it grants.</summary>
         private static readonly Dictionary<string, Clearance> Granted = new Dictionary<string, Clearance>
         {
             { "bindrune_elder", Clearance.Elder },
@@ -165,7 +147,8 @@ namespace Bindrune.Bindrunes
             { "bindrune_ashen", Clearance.Ashen },
         };
 
-        internal static string AnchorPrefab => "bindrune_anchor";
+        /// <summary>Each bindrune prefab and the clearance it grants, for the site sweep to gather.</summary>
+        internal static IEnumerable<KeyValuePair<string, Clearance>> Bindrunes => Granted;
 
         /// <summary>What clearance a prefab grants, or None if it is not one of ours.</summary>
         internal static Clearance ClearanceOf(string prefabName)
@@ -345,11 +328,12 @@ namespace Bindrune.Bindrunes
             wear.m_noSupportWear = true;
             wear.m_materialType = WearNTear.MaterialType.Stone;
 
-            Transform visual = prefab.transform.Find("visual");
-            if (visual != null)
-            {
-                wear.m_new = visual.gameObject;
-            }
+            // m_new, m_worn and m_broken stay null, all three of them. SetHealthVisual returns early
+            // only when every one is null; set just m_new — the obvious thing — and it walks straight
+            // into m_worn.SetActive on a null reference, once per placement and once per load.
+            //
+            // A stone stand has no damaged mesh to swap to, so there is nothing to lose here: it takes
+            // damage, it holds its shape, and it disappears when destroyed.
         }
     }
 }

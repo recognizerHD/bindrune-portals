@@ -1,4 +1,5 @@
 using Bindrune.Portals;
+using Bindrune.Travel;
 using Bindrune.UI;
 using HarmonyLib;
 using UnityEngine;
@@ -86,9 +87,19 @@ namespace Bindrune.Patches
 
             ZDO zdo = ___m_nview.GetZDO();
             long targetPid = PortalTarget.GetDestination(zdo);
-            if (targetPid == PortalTarget.NoPid)
+
+            // Both re-aimed and tag-paired portals go through the same gate. A clearance rule that
+            // only applied to re-aimed portals could be sidestepped by naming two portals the same
+            // thing, which would make the whole system decorative.
+            if (!ClearanceGate.TryResolveDestination(zdo, out ZDO destination, out long pendingPid))
             {
-                // Never re-aimed. Vanilla's tag pairing owns this portal entirely.
+                if (targetPid != PortalTarget.NoPid)
+                {
+                    player.Message(MessageHud.MessageType.Center, "This portal points at somewhere that no longer exists.");
+                    return false;
+                }
+
+                // Not re-aimed and not tag-paired: nowhere to go. Vanilla says so better than we would.
                 return true;
             }
 
@@ -108,34 +119,36 @@ namespace Bindrune.Patches
                 }
             }
 
-            // Phase 2 replaces this with the destination's clearance mask and a refusal that names
-            // the resource and the missing bindrune (R6). Until then the vanilla rule stands, and
-            // m_allowAllItems is honoured either way — a portal the base game lets everything
-            // through must not start refusing cargo because we are in the path.
-            if (!__instance.m_allowAllItems && !player.IsTeleportable())
-            {
-                player.Message(MessageHud.MessageType.Center, "$msg_noteleport");
-                return false;
-            }
-
-            // The pid survives relogs; the ZDOID it resolves to does not, so the registry is asked
-            // fresh every time rather than anything caching the answer.
-            if (!PortalRegistry.TryGet(targetPid, out PortalRecord target))
-            {
-                player.Message(MessageHud.MessageType.Center, "This portal points at somewhere that no longer exists.");
-                return false;
-            }
-
-            ZDO destination = ZDOMan.instance?.GetZDO(target.Id);
             if (destination == null)
             {
                 // Normal, not exceptional: the destination is usually kilometres away and not in
                 // this client's ZDO set. Ask for it — the TargetFound patch below is already asking
                 // every frame the player stands here, so this is the rare case of walking straight
                 // in before it arrived.
-                ZDOMan.instance?.RequestZDO(target.Id);
+                if (pendingPid != PortalTarget.NoPid && PortalRegistry.TryGet(pendingPid, out PortalRecord pending))
+                {
+                    ZDOMan.instance?.RequestZDO(pending.Id);
+                }
+
                 player.Message(MessageHud.MessageType.Center, "The far side has not answered yet.");
                 return false;
+            }
+
+            // The gate this mod exists for. m_allowAllItems still wins: a portal the base game lets
+            // everything through must not start refusing cargo because we are in the path.
+            if (!__instance.m_allowAllItems)
+            {
+                ClearanceGate.Refusal refusal = ClearanceGate.FirstRefusal(
+                    player.GetInventory(),
+                    ClearanceGate.MaskOf(destination));
+
+                if (refusal != null)
+                {
+                    player.Message(
+                        MessageHud.MessageType.Center,
+                        ClearanceGate.Explain(refusal, destination.GetString(ZDOVars.s_tag, string.Empty)));
+                    return false;
+                }
             }
 
             Vector3 position = destination.GetPosition();
@@ -201,6 +214,52 @@ namespace Bindrune.Patches
 
             __result = __result.Replace(settag, Localization.instance.Localize("$bindrune_hover_aim"))
                        + $"\n[<color=yellow><b>{alt}+{use}</b></color>] {settag}";
+        }
+
+        /// <summary>
+        /// Makes the portal's glow tell the truth about <em>this</em> player's cargo.
+        /// <para>
+        /// Vanilla already dims a portal when the nearby player is carrying something non-teleportable
+        /// — the feedback channel §7 asks for exists and always has. What it cannot know is that our
+        /// rule is per-destination: with copper in hand, vanilla darkens every portal in the world,
+        /// including the two whose destinations would take it gladly. An indicator that is wrong is
+        /// worse than none, because a player learns to trust it before they learn its limits.
+        /// </para>
+        /// <para>
+        /// A postfix rather than a rewrite: vanilla decides, then we correct the answer for the one
+        /// thing it could not have known. It shares <c>TryResolveDestination</c> with the travel gate,
+        /// so the glow and the doorway can never disagree about where this portal goes.
+        /// </para>
+        /// </summary>
+        [HarmonyPostfix]
+        [HarmonyPatch("UpdatePortal")]
+        private static void GlowForThisPlayersCargo(TeleportWorld __instance, ZNetView ___m_nview)
+        {
+            if (__instance.m_target_found == null || __instance.m_proximityRoot == null ||
+                ___m_nview == null || !___m_nview.IsValid())
+            {
+                return;
+            }
+
+            Player nearby = Player.GetClosestPlayer(
+                __instance.m_proximityRoot.position,
+                __instance.m_activationRange);
+
+            if (nearby == null)
+            {
+                // Nobody to answer for. Vanilla already switched the effect off.
+                return;
+            }
+
+            if (!ClearanceGate.TryResolveDestination(___m_nview.GetZDO(), out ZDO destination, out long _) ||
+                destination == null)
+            {
+                // Unreachable or not yet known: vanilla's own "no target" handling is right.
+                return;
+            }
+
+            __instance.m_target_found.SetActive(
+                ClearanceGate.Allows(nearby, destination, __instance.m_allowAllItems));
         }
 
         /// <summary>

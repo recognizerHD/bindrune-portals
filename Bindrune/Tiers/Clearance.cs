@@ -57,6 +57,42 @@ namespace Bindrune.Tiers
         internal const Clearance All = Clearance.Elder | Clearance.Bonemass | Clearance.Moder |
                                        Clearance.Yagluth | Clearance.Queen | Clearance.Ashen;
 
+        /// <summary>
+        /// The tiers in the order a player earns them. Only <c>StrictLadder</c> and display care about
+        /// the order — the flags themselves are deliberately independent (R1).
+        /// </summary>
+        internal static readonly Clearance[] Ladder =
+        {
+            Clearance.Elder, Clearance.Bonemass, Clearance.Moder,
+            Clearance.Yagluth, Clearance.Queen, Clearance.Ashen,
+        };
+
+        /// <summary>
+        /// The mask truncated at its first missing rung, for <c>StrictLadder</c>.
+        /// <para>
+        /// A site with Elder's and Moder's but no Bonemass's keeps copper and loses silver: under a
+        /// strict ladder a higher rune means nothing without the ones below it. Off by default,
+        /// because independent flags are the shipped rule (R1) — this exists for servers that want
+        /// the ladder climbed in order.
+        /// </para>
+        /// </summary>
+        internal static Clearance UpToFirstGap(Clearance mask)
+        {
+            Clearance kept = Clearance.None;
+
+            foreach (Clearance tier in Ladder)
+            {
+                if ((mask & tier) != tier)
+                {
+                    break;
+                }
+
+                kept |= tier;
+            }
+
+            return kept;
+        }
+
         /// <summary>Does this mask permit <paramref name="required"/> through?</summary>
         internal static bool Permits(this Clearance mask, Clearance required)
         {

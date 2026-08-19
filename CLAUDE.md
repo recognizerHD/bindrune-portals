@@ -48,9 +48,9 @@ Violating any of these means rewriting a lot, so check against them before propo
 - **The portal registry carries each portal's mask.** A client at A needs A's *target's* mask, and
   the target is normally unloaded on that client, so the ZDO mirror alone cannot answer it. This is
   what makes both the travel gate and the inventory overlay possible.
-- **The server computes clearance masks; clients only read them.** Masks live on the anchor's ZDO and
-  are *mirrored* onto every portal ZDO in radius — required, because a traveling client can read the
-  destination portal's ZDO but cannot see bindrunes kilometres away.
+- **The server computes clearance masks; clients only read them.** A mask is written straight onto the
+  portal's ZDO, recomputed from the bindrunes standing in range — required, because a traveling client
+  can read the destination portal's ZDO but cannot see bindrunes kilometres away.
 - **Never store a ZDOID.** The game renumbers every ZDO on every world load, so a saved ZDOID points
   at nothing — or at whatever inherited its number. Anything that must outlive a session refers to a
   portal by its `bindrune_pid`; the registry resolves that to a live ZDOID on demand. See DESIGN.md §12.
@@ -110,7 +110,7 @@ Bindrune/
   Compat/                   ✓ conflicting-mod detection
   Tiers/                    # ObjectDB scan, prefab -> tier map
   Portals/                  # registry + server sync
-  Bindrunes/                # anchor + bindrune pieces, site resolution
+  Bindrunes/                # bindrune pieces, site resolution
   Clearance/                # mask type, server recompute
   Travel/                   # the teleport gate + refusal messages
   UI/                       # destination panel (keyboard + gamepad)

@@ -1,3 +1,4 @@
+using Bindrune.Bindrunes;
 using Bindrune.Portals;
 using Bindrune.UI;
 using HarmonyLib;
@@ -20,6 +21,7 @@ namespace Bindrune.Patches
         private static void StartRegistry()
         {
             PortalRegistry.OnWorldStart();
+            SiteSweep.Start();
         }
 
         // Private in the game, which Harmony does not care about.
@@ -28,6 +30,7 @@ namespace Bindrune.Patches
         private static void StopRegistry()
         {
             PortalRegistry.OnWorldEnd();
+            SiteSweep.Stop();
             DestinationSelector.Reset();
         }
     }

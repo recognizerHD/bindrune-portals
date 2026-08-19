@@ -111,7 +111,7 @@ the log. Turn it off in the config if you'd rather it were quiet; it will defaul
 Cargo checks are client-trusting, because player inventories are client-side in Valheim — same as
 vanilla. This is a rule system for a co-op server, **not anti-cheat.**
 
-Removing the mod removes its custom pieces, so any anchors and bindrunes you built will vanish. The extra
+Removing the mod removes its custom pieces, so any bindrunes you built will vanish. The extra
 ZDO keys it writes are harmless to a vanilla client.
 
 ## Licensing

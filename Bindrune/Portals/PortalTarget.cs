@@ -156,7 +156,7 @@ namespace Bindrune.Portals
         /// between two players at the same portal is the contention §5 already accepts, not a bug
         /// to engineer around. Vanilla claims portal ZDOs the same way when it repairs connections.
         /// </summary>
-        private static void Claim(ZDO zdo)
+        internal static void Claim(ZDO zdo)
         {
             if (!zdo.IsOwner())
             {
@@ -169,7 +169,7 @@ namespace Bindrune.Portals
         /// thing a player does and then immediately walks into, so the usual lazy propagation is
         /// exactly the wrong trade here. Vanilla does the same after rewriting portal connections.
         /// </summary>
-        private static void Publish(ZDO zdo)
+        internal static void Publish(ZDO zdo)
         {
             ZDOMan.instance?.ForceSendZDO(zdo.m_uid);
         }
