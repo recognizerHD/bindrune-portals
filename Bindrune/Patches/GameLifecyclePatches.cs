@@ -31,6 +31,7 @@ namespace Bindrune.Patches
         {
             PortalRegistry.OnWorldEnd();
             SiteSweep.Stop();
+            PlacementFeedback.Reset();
             DestinationSelector.Reset();
         }
     }

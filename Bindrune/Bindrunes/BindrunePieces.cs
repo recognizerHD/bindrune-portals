@@ -54,7 +54,8 @@ namespace Bindrune.Bindrunes
                 Name = "bindrune_elder",
                 Display = "Elder's Bindrune",
                 Description = "Lets copper, tin and bronze arrive at this site.",
-                Tint = new Color(0.25f, 0.85f, 0.30f),
+                // Yellow, for the brass-and-bronze end of the Black Forest rather than its trees.
+                Tint = new Color(0.95f, 0.80f, 0.15f),
                 Requirements = new[]
                 {
                     new RequirementConfig { Item = TrophyElder, Amount = 1, Recover = true },
@@ -69,7 +70,8 @@ namespace Bindrune.Bindrunes
                 Name = "bindrune_bonemass",
                 Display = "Bonemass's Bindrune",
                 Description = "Lets iron arrive at this site.",
-                Tint = new Color(0.55f, 0.70f, 0.35f),
+                // The green the Elder used to wear, which suits a swamp far better than a forest.
+                Tint = new Color(0.25f, 0.85f, 0.30f),
                 Requirements = new[]
                 {
                     new RequirementConfig { Item = TrophyBonemass, Amount = 1, Recover = true },
@@ -279,7 +281,12 @@ namespace Bindrune.Bindrunes
                     Rotation = RenderManager.IsometricRotation,
                     Width = 128,
                     Height = 128,
-                    UseCache = true,
+
+                    // Uncached. The icon is a photograph of the tinted prefab, so a cached one
+                    // outlives the tint it was taken of - change a rune's colour and its icon keeps
+                    // the old one, which looks like the tint failed. Seven small renders at startup
+                    // is a price worth paying to never debug that.
+                    UseCache = false,
                 });
 
                 if (icon == null)
