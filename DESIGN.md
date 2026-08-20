@@ -3,13 +3,14 @@
 > A Valheim mod. Travel to any portal by name; what you may **carry** through is decided by the
 > bindrunes standing at the **destination**, and every bindrune is bought with a boss trophy.
 
-Status: **Draft 4. Phases 1 and 2 are built and playable.** You can pick any portal in the world off
-the map, and what you may carry through is decided by the bindrunes standing at the far end. Both
-features work in game; §12 is split into what has been read off the shipped assemblies and what still
-needs the game running.
+Status: **Draft 5. Phases 1 to 4 are built and played.** Any-portal travel, clearance decided by the
+destination, the feedback that explains both, and optional seamless transit. Everything in the build
+order below is implemented and has been exercised in game.
 
-What is left is feedback rather than mechanism: telling a player what the rules are doing before they
-walk into one (§8, phases 3 and 5).
+Two things stand between that and a release, and neither is a feature. Clearance has never crossed a
+real network — the registry sync was proven on two machines before masks existed, so no client has yet
+received a non-zero one. And the costs in §4 are placeholders that want real play (§10), which is the
+only brake on the entire design.
 
 ---
 
@@ -329,9 +330,9 @@ player stood at that portal and cached with the portal record. Phase 3 nicety, n
 |---|---|---|---|
 | 1 | **Destination selector** ✅ | Portal registry, server sync, the one-way target on the portal ZDO, and the map selector with keyboard *and* gamepad nav. | Yes — and it's the must-have. |
 | 2 | **Bindrunes** ✅ | Six pieces, the mask, server recompute, the destination check, named refusals on entry. | Yes. The mod's reason to exist. |
-| 3 | **Telling the player** | Build-mode feedback (§5) — which portal a rune reached, and its range. The blocked-cargo overlay on inventory icons. Clearance chips in the selector, cargo filter, destination thumbnails. | Needs 1 + 2. |
-| 4 | **Seamless transit** | Approach-time gating, rune curtain, preload, fade. Default off. | Optional — cut without regret if it fights the game. |
-| 5 | **Release readiness** | Refusals and piece text through the localisation layer. Masks verified over a real network, two machines. `LogNetworkSync` defaulted off, *after* that verification and not before. | The last things between a working mod and a shippable one. |
+| 3 | **Telling the player** ✅ | Build-mode feedback (§5) — range and the portal a rune reached. The blocked-cargo overlay on inventory icons. Clearance chips in the selector and the cargo filter. Thumbnails and favourites deferred as niceties. | Needs 1 + 2. |
+| 4 | **Seamless transit** ✅ | Approach-time warning in words, and a trip that ends when loading does. Default off. Preloading and the rune curtain deliberately not built — see below. | Optional — cut without regret if it fights the game. |
+| 5 | **Release readiness** | Localisation ✅. Masks verified over a real network, two machines. `LogNetworkSync` defaulted off, *after* that verification and not before. Thunderstore packaging ✅. | The last things between a working mod and a shippable one. |
 
 Phase 2 shipped playable on the entry message alone, which is the *worse* half of §5's two layers —
 you learn at the threshold instead of while packing. That is why Phase 3 is named for what it does
@@ -342,6 +343,23 @@ ore and be refused.
 Phase 5 exists because "it works on my machine" is the one claim this project has repeatedly had to
 withdraw. `LogNetworkSync` stays on until masks have been watched crossing a real network, and is
 turned off in the same change that confirms they do.
+
+### What phase 4 turned out to be
+
+Most of it was a decision not to build something. §7's own scope call — depend on a maintained
+preloading mod rather than own that code — held up: an attempt at dragging destination zones in early
+with `ZoneSystem.PokeLocalZone` was written and thrown away, because Valheim unloads zones outside the
+active area and the attempt was arguing with the game about something the game is right about.
+
+What remained was worth having, and came from reading `Player.UpdateTeleport` rather than from the
+plan. A distant trip is not slow because loading is slow; it is slow because the method will not even
+*check* whether the destination is ready until eight seconds have passed. So a destination already in
+memory now skips the screen entirely, and one that is not shows it for exactly as long as the zone
+genuinely takes. Nothing is loaded early and `IsAreaReady` still decides what ready means.
+
+The rune curtain was dropped too. Its purpose in §7 was to stop a player walking in when seamless
+transit removes the refusal moment — but the refusal moment is still there, and now happens on
+approach as well, so a collider would only remove the ability to walk in and be told why.
 
 ### What Phase 1 actually shipped
 

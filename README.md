@@ -11,21 +11,22 @@ build order.
 
 ## Status
 
-Pre-alpha, but the whole idea is playable. **Phases 1 and 2 are done.** Interact with a portal, pick
-any portal in the world off the map, and it points there for everyone until someone re-aims it.
-Pointers are one-way. Build a bindrune next to a portal and that portal will accept the metals that
-rune covers — and refuse the rest, by name:
+Pre-alpha, but the whole idea is playable and every phase of the design is built. Interact with a
+portal, pick any portal in the world off the map, and it points there for everyone until someone
+re-aims it. Pointers are one-way. Build a bindrune next to a portal and that portal accepts the metals
+that rune covers — and refuses the rest, by name:
 
 > Iron cannot enter "Copper Mine" — no Bonemass's Bindrune there.
 
 Only the destination is ever checked, so an outpost with no bindrunes can send ore to your base
 forever and never receive any. That asymmetry is the point of the mod.
 
-What is missing is explanation rather than mechanism. A bindrune planted just out of range does
-nothing and does not say so, and you find out what a destination refuses at the doorway rather than
-while packing. Both are the next phase.
+You are told before you commit, not at the wall: the portal's runes go dark, the offending stacks are
+marked in your inventory, and walking up gets you the reason in words.
 
-Not yet tested over a network with clearance in play.
+**Two caveats before you install this on a server.** Clearance has been played thoroughly in single
+player but has never been tested with two machines connected. And the bindrune costs are placeholders
+— they may well be far too cheap.
 
 ### Controls
 
@@ -118,6 +119,20 @@ vanilla. This is a rule system for a co-op server, **not anti-cheat.**
 
 Removing the mod removes its custom pieces, so any bindrunes you built will vanish. The extra
 ZDO keys it writes are harmless to a vanilla client.
+
+## Packaging a release
+
+`tools/Package.ps1` builds Release and assembles a Thunderstore-ready zip in `dist/` — metadata at the
+root, the plugin under `plugins/`, which is the layout Thunderstore expects and the one that installs
+to the wrong place if you get it wrong.
+
+```powershell
+./tools/Package.ps1
+```
+
+The version comes from `manifest.json`, which is the single source of truth; the script warns if
+`BuildInfo.cs` disagrees. `icon.png` is currently a placeholder and wants replacing before anything is
+published.
 
 ## Licensing
 

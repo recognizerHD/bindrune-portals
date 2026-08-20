@@ -22,25 +22,26 @@ the repo.
 
 ## Current state
 
-**Phases 1 and 2 are built and verified in game.** Both features work: any-portal travel, and
-clearance decided by the destination.
+**Phases 1 to 4 are built and played in game.** Any-portal travel, clearance decided by the
+destination, the feedback that explains both, and optional seamless transit.
 
 Working: the server-swept portal registry (`Portals/`), `bindrune_pid` identity that survives a relog,
-one-way targets honoured by a `TeleportWorld.Teleport` prefix, the map-and-list destination selector
-(`UI/`), the `ObjectDB` tier map (`Tiers/`), six bindrune pieces cloned from a dungeon prop
-(`Bindrunes/`), the ten-second site sweep that turns runes standing near a portal into that portal's
-mask, and the travel gate with named refusals (`Travel/`). Vanilla tag pairing still works untouched
-on any portal nobody has re-aimed, and goes through the same clearance gate.
+one-way targets honoured by a `TeleportWorld.Teleport` prefix, the map-and-list selector with
+clearance chips and a cargo filter (`UI/`), the `ObjectDB` tier map (`Tiers/`), six bindrune pieces
+cloned from a dungeon prop with per-tier tinted cores (`Bindrunes/`), the ten-second site sweep, the
+travel gate with named refusals (`Travel/`), the inventory overlay, build-mode range and binding
+feedback, and a trip that ends when loading does rather than on vanilla's timer.
 
-Five console commands, all echoing to the log: `bindrune_portals`, `bindrune_aim`, `bindrune_net`,
+Console commands, all echoing to the log: `bindrune_portals`, `bindrune_aim`, `bindrune_net`,
 `bindrune_items`, `bindrune_prefabs` / `bindrune_inspect` / `bindrune_preview`. Reach for those before
 inferring anything about a running game — several rounds were lost this way already.
 
-**Never tested over a real network with masks in play.** The registry sync itself was verified on two
-machines, but that predates clearance, so no client has yet received a non-zero mask. That is Phase 5.
+**Two things remain, and neither is a feature.** Clearance has never crossed a real network: the
+registry sync was proven on two machines before masks existed, so no client has yet received a
+non-zero one. `LogNetworkSync` stays on until it has, and is turned off in the same change that
+confirms it. And the §4 costs are placeholders that want real play (§10).
 
-Still unwritten: build-mode feedback, the inventory overlay, clearance chips, and everything in §8's
-phases 3 to 5.
+Deferred as niceties: destination thumbnails and selector favourites.
 
 ## Non-negotiable invariants
 

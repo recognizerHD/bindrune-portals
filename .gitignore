@@ -56,3 +56,6 @@ mono_crash.*
 # ---------------------------------------------------------------------------
 packages/
 *.nupkg
+
+# Packaged release output
+dist/
