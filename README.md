@@ -24,9 +24,8 @@ forever and never receive any. That asymmetry is the point of the mod.
 You are told before you commit, not at the wall: the portal's runes go dark, the offending stacks are
 marked in your inventory, and walking up gets you the reason in words.
 
-**Two caveats before you install this on a server.** Clearance has been played thoroughly in single
-player but has never been tested with two machines connected. And the bindrune costs are placeholders
-— they may well be far too cheap.
+**One caveat before you install this on a server.** Clearance has been played thoroughly in single
+player but has never been tested with two machines connected.
 
 ### Controls
 

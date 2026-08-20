@@ -37,4 +37,3 @@ Five console commands for looking at what the mod believes: `bindrune_portals`,
 - Clearance has never been tested with two machines connected.
 - `LogNetworkSync` defaults **on** and narrates the portal sync into the log. It
   will default off once the above has been verified.
-- The bindrune costs are placeholders and want real play to settle.

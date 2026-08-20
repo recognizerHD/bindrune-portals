@@ -7,10 +7,11 @@ Status: **Draft 5. Phases 1 to 4 are built and played.** Any-portal travel, clea
 destination, the feedback that explains both, and optional seamless transit. Everything in the build
 order below is implemented and has been exercised in game.
 
-Two things stand between that and a release, and neither is a feature. Clearance has never crossed a
-real network — the registry sync was proven on two machines before masks existed, so no client has yet
-received a non-zero one. And the costs in §4 are placeholders that want real play (§10), which is the
-only brake on the entire design.
+One thing stands between that and a release, and it is not a feature: clearance has never crossed a
+real network. The registry sync was proven on two machines before masks existed, so no client has yet
+received a non-zero one.
+
+The costs in §4 are settled — see §10, where the balance question turned out to be framed backwards.
 
 ---
 
@@ -86,7 +87,8 @@ way you walked in, with a configurable fade.
 
 ## 4. The bindrune ladder
 
-Costs are **placeholders** — they need real play to settle.
+Every rune costs **the boss's head plus some of what that biome gives you** — see §10 for why that is
+the whole of it, and why the ladder is not trying to be a wall.
 
 There is no anchor. An earlier draft had a tier-0 **Wayfarer's Anchor** that granted nothing and was
 required before any bindrune counted — it gave Eikthyr a job and made founding a site deliberate.
@@ -419,26 +421,40 @@ and stores nothing that can rot.
 
 ### Still open
 
-None of the structural questions. What is left is numbers, not shape: the ladder costs in §4 are
-placeholders and the bindrune radius default is a guess, and both want real play rather than more
-argument. §10 is where that lands.
+Nothing structural, and the balance question that was open longest turned out to be misframed rather
+than unanswered — §10 has it. What remains is one guess: the ten-metre `BindruneRadius`, which decides
+how tightly a site has to be built and wants play rather than argument.
 
 ---
 
-## 10. The main balance risk
+## 10. The balance question
 
-The cost curve is the only brake, and trophies are farmable. On a server that has killed Yagluth, a
-determined group can build bindrunes at every site they own in an afternoon of boss re-summons — at
-which point Bindrune quietly becomes an unrestricted-portals mod with extra steps.
+This began as the design's main worry. The cost curve looked like the only brake, and trophies are
+farmable: on a server that has killed Yagluth, a determined group can build bindrunes at every site
+they own in an afternoon of boss re-summons — at which point, the fear went, Bindrune quietly becomes
+an unrestricted-portals mod with extra steps.
 
 **A fuelled mode was the other available answer, and it has been rejected** (R7). The gate is meant
 to be the boss kill, not upkeep: once you have beaten a biome you have moved on to the next one, and
 the trips back to earlier zones for resources are exactly the drudgery this mod exists to remove.
 Charging rent on a network you already earned would put that friction back in the wrong place.
 
-So the cost curve is now the *only* brake, and it has to carry the whole load alone. That makes the
-metal component the lever — building out a site should read as a real project, not an errand. The numbers
-in §4 are placeholders and this is the part that most needs real play.
+### Settled: the risk was the wrong way round
+
+The worry above assumed permissiveness was the failure. It is not — it is the point. A bindrune costs
+**the boss's head plus some of what that biome gives you**, and what it buys is the right to move that
+biome's goods more freely. A group that has killed Yagluth and can now shift black metal around their
+network has not broken the rule; they have finished paying for it.
+
+That reframing also names the real brake, which was never the cost curve. It is **R3**. Clearance is
+read at the destination, so every site you want to receive at needs a rune *standing there* — which
+means going there, on foot or by boat, carrying the pieces. That cost is per-site and cannot be farmed
+by re-summoning anything. Trophies being farmable makes the tenth rune cheaper than the first; it does
+nothing about the tenth *journey*, and the journey is what the mod is actually charging for.
+
+So the numbers in §4 stand: a trophy and ten of the metal, which reads as a real errand without
+pretending to be a wall. If play shows otherwise the lever is the metal component, and it is a config
+line rather than a design change.
 
 ---
 
