@@ -1,148 +1,117 @@
-# bindrune-portals
+# Bindrune
 
-Pick any portal by name. What you may carry through is decided by the bindrunes standing at the far end — and every bindrune is bought with a boss trophy.
+**Travel to any portal in the world. What you may carry through is decided by the bindrunes standing
+at the far end — and every bindrune is bought with a boss's head.**
 
-**Bindrune** is a Valheim mod. Build an Elder's Bindrune at your base and from then on *every* portal
-in the world can send copper, tin and bronze **to** your base — and none of them can receive it back
-until you go build a bindrune there too. Ore flows inward, toward the places you have invested in.
+Interact with a portal and pick your destination off the map. The choice belongs to the portal and
+applies to everyone, until someone re-aims it. Walking in travels.
 
-See [DESIGN.md](DESIGN.md) for the full spec: the rules, the bindrune ladder, the architecture, and the
-build order.
-
-## Status
-
-Pre-alpha, but the whole idea is playable and every phase of the design is built. Interact with a
-portal, pick any portal in the world off the map, and it points there for everyone until someone
-re-aims it. Pointers are one-way. Build a bindrune next to a portal and that portal accepts the metals
-that rune covers — and refuses the rest, by name:
+Then the part that makes it more than another any-portal mod. Build an **Elder's Bindrune** beside a
+portal and that portal will accept copper, tin and bronze. It will still refuse iron — until you go
+and build a **Bonemass's Bindrune** there too, and it says so in as many words:
 
 > Iron cannot enter "Copper Mine" — no Bonemass's Bindrune there.
 
-Only the destination is ever checked, so an outpost with no bindrunes can send ore to your base
-forever and never receive any. That asymmetry is the point of the mod.
+**Only the destination is ever checked.** An outpost with no bindrunes can send ore to your base
+forever and never receive any. That asymmetry is the whole point: ore flows *inward*, toward the
+places you have invested in, and outposts stay cheap and disposable.
 
-You are told before you commit, not at the wall: the portal's runes go dark, the offending stacks are
-marked in your inventory, and walking up gets you the reason in words.
+You are told before you commit, not at the wall. The portal's runes go dark when it will refuse what
+you are holding, the offending stacks are marked in your inventory while you pack, and walking up to
+the portal gets you the reason in words.
 
-**One caveat before you install this on a server.** Clearance has been played thoroughly in single
-player but has never been tested with two machines connected.
+> **One caveat.** Clearance has been played thoroughly in single player but has not yet been tested
+> with two machines connected. It is safe to try on a server; just do not be shocked by a rough edge.
 
-### Controls
+## Installing
+
+Needs **BepInEx** and **Jotunn**. If you are using a mod manager both come as dependencies and there
+is nothing else to do. By hand, drop `Bindrune.dll` into `BepInEx/plugins`.
+
+**Install it on the server and on every client.** The server works out clearance; clients need the
+map selector and the travel check. Clearance rules synchronise from the server, so nobody can loosen
+them locally.
+
+Removing the mod removes its pieces, so any bindrunes you built will vanish — normal for any mod that
+adds buildables. The extra data it writes is harmless to an unmodded game.
+
+## The bindrunes
+
+Each is built from that biome boss's trophy plus a little of what the biome gives you. Stand one
+within ten metres of a portal and it binds to it.
+
+| Bindrune | Costs | Lets through |
+|---|---|---|
+| **Elder's** | The Elder trophy · 10 copper · 20 stone | Copper, tin, bronze |
+| **Bonemass's** | Bonemass trophy · 10 iron · 20 stone | Iron and scrap iron |
+| **Moder's** | Moder trophy · 10 silver · 20 stone | Silver, dragon eggs |
+| **Yagluth's** | Yagluth trophy · 10 black metal · 20 stone | Black metal |
+| **Queen's** | The Queen trophy · 3 dvergr extractors · 20 stone | Dvergr extractors, mechanical springs |
+| **Ashen** | Fader trophy · 10 flametal · 20 stone | Flametal and the Ashlands' spoils |
+
+Tiers are independent — a site can accept silver while still refusing iron. Nothing makes you climb
+the ladder in order.
+
+While you are holding one, a beam shows which portal it would bind to, and a circle shows its reach
+if nothing is close enough.
+
+## Controls
 
 | | |
 |---|---|
 | **E** at a portal | Open the destination selector |
-| **Shift+E** | Rename the portal, as vanilla |
+| **Shift+E** at a portal | Rename it, as vanilla |
 | **← →** | Change the highlighted destination |
 | **P** | Confirm |
 | **Escape** | Cancel |
-| **O** | Cycle the list order |
+| **O** | Sort by distance or name |
+| **K** | Show only destinations that accept what you are carrying |
 
-All rebindable, with gamepad equivalents, under `5 - Selector keys` in the config.
+All rebindable under `5 - Selector keys`, each with a gamepad button beside it. The selector is fully
+playable on a pad.
 
-### Console commands
+## Settings worth knowing
 
-`bindrune_portals` lists every portal this instance knows about and where it points.
-`bindrune_aim <name>` re-aims the nearest portal without the map. `bindrune_net` reports the sync's
-state — run it on a server and a client and compare.
-
-## Building
-
-You need [BepInEx 5](https://valheim.thunderstore.io/package/denikson/BepInExPack_Valheim/)
-installed into Valheim, and the game run once so BepInEx generates its folders.
-
-1. Tell the build where Valheim lives, either way round:
-   - set `VALHEIM_INSTALL` as an environment variable, or
-   - copy `Environment.props.example` to `Environment.props` and edit the path in it.
-
-   `Environment.props` is gitignored on purpose — it is a machine-local path.
-
-2. Build:
-
-   ```sh
-   dotnet build Bindrune.sln -c Release
-   ```
-
-   The first build runs Jotunn's prebuild task, which publicises the game assemblies and generates
-   the MMHOOK assemblies **inside your game folder**. Nothing it produces belongs in this repo. Once
-   that has run you can set `ExecutePrebuild` to `false` in `DoPrebuild.props` for faster builds; set
-   it back to `true` after a game update.
-
-3. The output is a single `Bindrune.dll`. Set `MOD_DEPLOYPATH` in `Environment.props` to have a
-   successful build copy it straight into `BepInEx/plugins`.
-
-   That one file is the whole mod — everything else it needs is BepInEx and Jotunn, which are
-   installed separately. The `.pdb` beside it is optional and only affects debugging: with it,
-   exceptions in the log carry file names and line numbers, which is worth having while developing
-   and worth leaving out of a release.
-
-If the game path is wrong or BepInEx is missing, the build stops with one plain error saying which,
-rather than a hundred unresolved references.
-
-### Checking the game API
-
-Anything this mod calls in the game has to be read off the shipped assemblies first, not remembered —
-see [DESIGN.md §12](DESIGN.md#12-game-api--verified-and-still-unverified). `tools/Dump-GameApi.ps1`
-is what that was done with: it reads metadata through the Mono.Cecil that BepInEx already ships, using
-the same `VALHEIM_INSTALL` the build uses, and copies nothing out of the game folder.
-
-```powershell
-./tools/Dump-GameApi.ps1 -Type TeleportWorld
-./tools/Dump-GameApi.ps1 -Type Game -IL ConnectPortals
-./tools/Dump-GameApi.ps1 -Member IsTeleportable
-```
-
-### Toolchain
-
-| | |
+| Setting | Does |
 |---|---|
-| BepInEx | 5 (HarmonyX / `0Harmony` comes with it) |
-| [Jotunn](https://github.com/Valheim-Modding/Jotunn) | `JotunnLib` 2.29.2 — pieces, localisation, config sync, and the game/BepInEx reference set |
-| Target framework | `net48` |
-| Publicising | Jotunn's own prebuild task. `BepInEx.AssemblyPublicizer.MSBuild` is **not** needed |
+| `ReaimPermission` | Who may re-aim a portal — anyone, only players a guard stone permits, or admins |
+| `BindruneRadius` | How far a bindrune reaches for its portal. Ten metres by default |
+| `PortalBinding` | Whether a rune binds to the nearest portal or every portal in range |
+| `StrictLadder` | Off by default. On, a site's clearance stops at its first missing rung |
+| `SeamlessTransit` | Off by default. Ends a trip when the destination has loaded rather than on vanilla's eight-second timer — a destination already in memory skips the loading screen entirely |
+| `ShowBlockedCargoOverlay` | Marks the stacks a nearby portal's destination will refuse |
+| `HidePortalNames` | Hides names in the selector, if you would rather navigate by the map |
 
-## Installing
+Which item belongs to which bindrune is configurable too, under `2 - Clearance`. The list of blocked
+items is never hand-written — it is read from the game at startup, so a game update adding a new ore
+cannot break the mod. Anything unrecognised is held to the highest tier and named in the log.
 
-You need **BepInEx 5** and **Jotunn**, then drop `Bindrune.dll` into `BepInEx/plugins`. Jotunn is a
-hard dependency: without it the plugin is skipped and the log says so.
+While the mod is pre-release, `LogNetworkSync` defaults **on** and narrates portal syncing into the
+log. Turn it off if you would rather it were quiet.
 
-Bindrune must be installed on the **server and every client**. The server owns clearance and computes
-the masks; clients need the destination panel and the travel gate. Config synchronises from the
-server, so clearance rules cannot be edited client-side.
+## Console commands
 
-While the mod is pre-release, `LogNetworkSync` defaults to **on** and narrates the portal sync into
-the log. Turn it off in the config if you'd rather it were quiet; it will default off at release.
+Type `help` in the F5 console for the full list. The useful ones:
 
-Cargo checks are client-trusting, because player inventories are client-side in Valheim — same as
-vanilla. This is a rule system for a co-op server, **not anti-cheat.**
+- `bindrune_portals` — every portal this game knows about, where it points, and its clearance
+- `bindrune_items` — every item the game refuses to teleport, and which bindrune permits it
+- `bindrune_net` — the sync's state. Run it on a server and a client and compare
 
-Removing the mod removes its custom pieces, so any bindrunes you built will vanish. The extra
-ZDO keys it writes are harmless to a vanilla client.
+## A note on cheating
 
-## Packaging a release
+Cargo checks happen on your own machine, because that is where your inventory is. A determined player
+could bypass them. This is a rule system for playing with people you like, **not anti-cheat** — the
+server owns what each site permits, and never what you are carrying.
 
-`tools/Package.ps1` builds Release and assembles a Thunderstore-ready zip in `dist/` — metadata at the
-root, the plugin under `plugins/`, which is the layout Thunderstore expects and the one that installs
-to the wrong place if you get it wrong.
+## Building from source
 
-```powershell
-./tools/Package.ps1
-```
-
-The version comes from `manifest.json`, which is the single source of truth; the script warns if
-`BuildInfo.cs` disagrees.
-
-`tools/Make-Icon.ps1` builds `icon.png` from a screenshot — centre-cropped to a square and downscaled
-to the 256×256 Thunderstore requires, with resampling chosen because thin bright details are exactly
-what glowing runes are and a naive downscale turns them to mush.
+See **[BUILDING.md](BUILDING.md)**. The design and the reasoning behind it are in
+**[DESIGN.md](DESIGN.md)**.
 
 ## Licensing
 
 Code: **MIT** — see [LICENSE](LICENSE).
 
-Valheim and its assets are the property of Iron Gate Studio. No game files are redistributed here,
-and none may be committed to this repo — not the DLLs, not publicised assemblies, not extracted
-meshes or textures. The build references your own local install instead.
-
-If original art ever ships in an asset bundle it will be licensed separately in this section, because
-MIT's "software" wording maps badly onto art.
+Valheim and its assets are the property of Iron Gate Studio. No game files are redistributed here.
+The mod builds its pieces by recolouring one that already exists in the game rather than shipping any
+art of its own.

@@ -59,8 +59,8 @@ namespace Bindrune.Config
         private const string SectionClearance = "2 - Clearance";
         private const string SectionCargoPreview = "3 - Cargo preview";
         private const string SectionCompatibility = "4 - Compatibility";
-        private const string SectionTransit = "5 - Transit";
-        private const string SectionDiagnostics = "6 - Diagnostics";
+        private const string SectionTransit = "6 - Transit";
+        private const string SectionDiagnostics = "7 - Diagnostics";
 
         // -- Travel ----------------------------------------------------------------------------
 

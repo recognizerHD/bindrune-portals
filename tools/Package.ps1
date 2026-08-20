@@ -8,6 +8,11 @@
   that uploads happily and then installs to the wrong place, so it is worth a
   script rather than a habit.
 
+  README.md is what Thunderstore renders on the mod page, so it is written for
+  players. BUILDING.md and DESIGN.md are for contributors and stay out of the
+  package - nobody installing a mod needs to be told how to point MSBuild at
+  their game folder.
+
   Builds Release first, then assembles from the build output - never from
   whatever happens to be sitting in a deploy folder.
 
