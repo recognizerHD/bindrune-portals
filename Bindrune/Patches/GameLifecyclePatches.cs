@@ -1,5 +1,6 @@
 using Bindrune.Bindrunes;
 using Bindrune.Portals;
+using Bindrune.Travel;
 using Bindrune.UI;
 using HarmonyLib;
 
@@ -32,6 +33,7 @@ namespace Bindrune.Patches
             PortalRegistry.OnWorldEnd();
             SiteSweep.Stop();
             PlacementFeedback.Reset();
+            ApproachWarning.Reset();
             DestinationSelector.Reset();
         }
     }

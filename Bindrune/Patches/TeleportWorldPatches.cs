@@ -258,8 +258,13 @@ namespace Bindrune.Patches
                 return;
             }
 
-            __instance.m_target_found.SetActive(
-                ClearanceGate.Allows(nearby, destination, __instance.m_allowAllItems));
+            bool allowed = ClearanceGate.Allows(nearby, destination, __instance.m_allowAllItems);
+            __instance.m_target_found.SetActive(allowed);
+
+            // The glow is the ambient half of §7's approach-time warning; this is the half that names
+            // the item and the missing rune. Both are driven from the same answer, so they cannot
+            // contradict each other.
+            ApproachWarning.Consider(___m_nview.GetZDO(), destination, nearby, allowed);
         }
 
         /// <summary>

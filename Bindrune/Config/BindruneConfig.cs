@@ -102,6 +102,7 @@ namespace Bindrune.Config
         // -- Cargo preview ---------------------------------------------------------------------
 
         internal static ConfigEntry<bool> ShowBlockedCargoOverlay { get; private set; }
+        internal static ConfigEntry<bool> WarnOnApproach { get; private set; }
         internal static ConfigEntry<float> CargoPreviewRange { get; private set; }
 
         // -- Compatibility ---------------------------------------------------------------------
@@ -208,6 +209,14 @@ namespace Bindrune.Config
                 true,
                 new ConfigDescription("Mark inventory stacks the nearby portal's destination will refuse. " +
                                       "Purely visual — it reads the tier map, never item data. Local to you."));
+
+            WarnOnApproach = config.Bind(
+                SectionCargoPreview,
+                "WarnOnApproach",
+                true,
+                new ConfigDescription("Name the offending item and the missing bindrune as you walk up " +
+                                      "to a portal whose destination would refuse you, rather than at " +
+                                      "the threshold. The portal's runes go dark either way. Local to you."));
 
             CargoPreviewRange = config.Bind(
                 SectionCargoPreview,
