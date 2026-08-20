@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using Bindrune.Config;
 using Bindrune.Portals;
+using Bindrune.Tiers;
 using Jotunn.Managers;
 using UnityEngine;
 using UnityEngine.UI;
@@ -49,14 +50,29 @@ namespace Bindrune.UI
         /// How many destinations the list shows at once. The window scrolls to keep the highlight in
         /// view rather than paging, so the entries either side stay visible and moving through the
         /// list feels continuous.
+        /// <para>
+        /// Seven rather than nine since each row grew a line of clearance chips. This is a budget as
+        /// much as a layout: an outlined UI Text costs about twenty mesh vertices per character and
+        /// Unity discards the entire mesh past 65000, so overrunning it blanks the panel instead of
+        /// truncating it.
+        /// </para>
         /// </summary>
-        private const int VisibleRows = 9;
+        private const int VisibleRows = 7;
 
         private static ZDOID _sourceId;
+        private static long _sourcePid;
         private static Vector3 _sourcePosition;
         private static string _sourceName;
         private static SortOrder _order = SortOrder.Distance;
+        private static bool _onlyWhatAcceptsMyCargo;
         private static int _highlight;
+
+        /// <summary>
+        /// The tiers the player is currently carrying something for, worked out once when the selector
+        /// opens. Recomputing it per row would ask the same question of the same inventory dozens of
+        /// times a frame for an answer that cannot change while a modal panel is up.
+        /// </summary>
+        private static Clearance _carrying;
         private static GameObject _panel;
         private static Text _text;
         private static bool _updateSeen;
@@ -87,9 +103,11 @@ namespace Bindrune.UI
             _sourceName = string.IsNullOrEmpty(tag) ? "this portal" : $"\"{tag}\"";
 
             _sourcePosition = portal.transform.position;
-            Candidates.Clear();
-            Candidates.AddRange(PortalRegistry.All.Where(p => p.Pid != sourcePid));
-            Sort();
+            _sourcePid = sourcePid;
+            _carrying = CarriedTiers(who as Player);
+            _onlyWhatAcceptsMyCargo = false;
+
+            Rebuild(PortalTarget.NoPid);
 
             if (Candidates.Count == 0)
             {
@@ -157,16 +175,18 @@ namespace Bindrune.UI
                 return;
             }
 
+            if (SelectorKeys.Pressed(SelectorKeys.Filter))
+            {
+                _onlyWhatAcceptsMyCargo = !_onlyWhatAcceptsMyCargo;
+                Rebuild(Held());
+                ShowHighlight();
+                return;
+            }
+
             if (SelectorKeys.Pressed(SelectorKeys.Sort))
             {
                 _order = _order == SortOrder.Distance ? SortOrder.Name : SortOrder.Distance;
-
-                // Re-sorting must not move the selection. Reordering the list under a fixed index
-                // would silently highlight a different portal, which is the sort of thing that ends
-                // with someone re-aiming a portal they did not mean to.
-                long held = Candidates[_highlight].Pid;
-                Sort();
-                _highlight = Mathf.Max(0, Candidates.FindIndex(p => p.Pid == held));
+                Rebuild(Held());
                 ShowHighlight();
                 return;
             }
@@ -177,6 +197,43 @@ namespace Bindrune.UI
                 // Wraps, because a list you can fall off the end of is worse than one you can loop.
                 _highlight = (_highlight + step + Candidates.Count) % Candidates.Count;
                 ShowHighlight();
+            }
+        }
+
+        /// <summary>The pid currently highlighted, so a rebuild can put the selection back on it.</summary>
+        private static long Held()
+        {
+            return _highlight >= 0 && _highlight < Candidates.Count
+                ? Candidates[_highlight].Pid
+                : PortalTarget.NoPid;
+        }
+
+        /// <summary>
+        /// Refills the candidate list from the registry, applying the filter and the sort, then puts
+        /// the highlight back on <paramref name="keep"/> if it survived.
+        /// <para>
+        /// Filtering and sorting share this one path deliberately. Both reorder the list under a fixed
+        /// index, and an index that silently comes to mean a different portal is how somebody re-aims
+        /// a portal they did not mean to.
+        /// </para>
+        /// </summary>
+        private static void Rebuild(long keep)
+        {
+            Candidates.Clear();
+            Candidates.AddRange(PortalRegistry.All.Where(p => p.Pid != _sourcePid));
+
+            if (_onlyWhatAcceptsMyCargo && _carrying != Clearance.None)
+            {
+                Candidates.RemoveAll(p => !Accepts(p));
+            }
+
+            Sort();
+
+            _highlight = keep == PortalTarget.NoPid ? 0 : Candidates.FindIndex(p => p.Pid == keep);
+            if (_highlight < 0)
+            {
+                // The one you were on is filtered out. Start again rather than land somewhere arbitrary.
+                _highlight = 0;
             }
         }
 
@@ -302,8 +359,24 @@ namespace Bindrune.UI
 
         private static void ShowHighlight()
         {
+            if (_text == null)
+            {
+                return;
+            }
+
             if (Candidates.Count == 0)
             {
+                // Only reachable with the cargo filter on: there are destinations, just none that
+                // would take what you are holding. Saying so beats an empty box.
+                var empty = new StringBuilder();
+                empty.AppendLine($"Aim {_sourceName} at");
+                empty.AppendLine();
+                empty.AppendLine("<color=#E06C4A>Nothing here will take what you are carrying.</color>");
+                empty.AppendLine();
+                empty.Append($"<size=13>[{Bound(SelectorKeys.Filter)}] show everything   " +
+                             $"[{Bound(SelectorKeys.Cancel)}] cancel</size>");
+
+                SetPanelText(empty.ToString());
                 return;
             }
 
@@ -312,14 +385,11 @@ namespace Bindrune.UI
             // Only on change, so the map still pans under the player's own hand between steps.
             Minimap.instance?.ShowPointOnMap(destination.Position);
 
-            if (_text == null)
-            {
-                return;
-            }
-
             var panel = new StringBuilder();
             panel.AppendLine($"Aim {_sourceName} at");
-            panel.AppendLine($"<size=13>ordered by {(_order == SortOrder.Distance ? "distance" : "name")}</size>");
+            panel.AppendLine($"<size=13>by {(_order == SortOrder.Distance ? "distance" : "name")}" +
+                             $"{(_onlyWhatAcceptsMyCargo ? ", only what takes my load" : string.Empty)}</size>");
+            panel.AppendLine(Verdict(destination));
             panel.AppendLine();
 
             // A window onto the list rather than the whole thing: clamped so it never runs off
@@ -333,7 +403,9 @@ namespace Bindrune.UI
             {
                 PortalRecord row = Candidates[i];
                 float distance = Vector3.Distance(_sourcePosition, row.Position);
-                string line = $"{Describe(row)}  <size=13>{distance:F0}m</size>";
+                // Name and distance on one line, chips indented beneath, so a row reads as a heading
+                // and its detail rather than one long strip the eye has to parse.
+                string line = $"{Describe(row)}  <size=13>{distance:F0}m</size>\n     {Chips(row)}";
 
                 panel.AppendLine(i == _highlight
                     ? $"<color=#FFB726>» {line}</color>"
@@ -342,12 +414,136 @@ namespace Bindrune.UI
 
             panel.AppendLine(last < Candidates.Count ? $"<size=13>{Candidates.Count - last} more below</size>" : " ");
             panel.AppendLine();
-            panel.AppendLine($"<size=13>[{Bound(SelectorKeys.Previous)} / {Bound(SelectorKeys.Next)}] change   " +
-                             $"[{Bound(SelectorKeys.Sort)}] sort</size>");
-            panel.Append($"<size=13>[{Bound(SelectorKeys.Confirm)}] confirm   " +
-                         $"[{Bound(SelectorKeys.Cancel)}] cancel</size>");
+            // Confirm and cancel first. The footer sits at the bottom of a fixed-height text box, so
+            // if anything is ever clipped it should be the line you can do without — and losing the
+            // two keys that commit or escape a modal panel is the worst possible thing to lose.
+            panel.AppendLine($"<size=13>[{Bound(SelectorKeys.Confirm)}] confirm   " +
+                             $"[{Bound(SelectorKeys.Cancel)}] cancel</size>");
+            panel.Append($"<size=13>[{Bound(SelectorKeys.Previous)} / {Bound(SelectorKeys.Next)}] change   " +
+                         $"[{Bound(SelectorKeys.Sort)}] sort   [{Bound(SelectorKeys.Filter)}] filter</size>");
 
-            _text.text = panel.ToString();
+            SetPanelText(panel.ToString());
+        }
+
+        /// <summary>
+        /// Assigns the panel text, complaining loudly if it has grown past what a UI Text can draw.
+        /// <para>
+        /// Unity discards a text mesh that exceeds 65000 vertices, which shows up as a panel that is
+        /// simply <em>blank</em> — no missing row, no error in the panel, nothing to suggest the text
+        /// was ever built. That is a miserable thing to debug from a screenshot, and it has already
+        /// happened once. The budget is roughly twenty vertices per drawn character with the outline
+        /// on, so this warns well before the cliff rather than at it.
+        /// </para>
+        /// </summary>
+        private static void SetPanelText(string text)
+        {
+            const int Budget = 2400;
+
+            if (text.Length > Budget)
+            {
+                Jotunn.Logger.LogWarning(
+                    $"Selector text is {text.Length} characters, past the {Budget} this panel can " +
+                    "safely draw. Expect it to render blank. Shorten a row, or drop VisibleRows.");
+            }
+
+            _text.text = text;
+        }
+
+        /// <summary>
+        /// The per-tier chips §5 asks for: granted tiers named, missing ones dashed.
+        /// <para>
+        /// A tier you are actually carrying something for and the destination lacks is drawn in the
+        /// refusal colour, so scanning the list finds the portal that will turn you away without
+        /// reading a word.
+        /// </para>
+        /// </summary>
+        private static string Chips(PortalRecord portal)
+        {
+            var mask = (Clearance)portal.ClearanceMask;
+            var chips = new StringBuilder("<size=12>");
+
+            foreach (Clearance tier in ClearanceExtensions.Ladder)
+            {
+                bool granted = (mask & tier) == tier;
+                bool needed = (_carrying & tier) == tier;
+
+                // Markup is rationed here, and it is not fussiness: a UI Text with an outline costs
+                // roughly twenty mesh vertices per character, and Unity throws away the whole mesh
+                // past 65000 — which renders as an empty panel rather than as an error. One size tag
+                // wraps the strip, and colour is spent only on the case that has to shout.
+                if (granted)
+                {
+                    chips.Append(tier.Symbol());
+                }
+                else if (needed)
+                {
+                    chips.Append($"<color=#E06C4A>{tier.Symbol()}</color>");
+                }
+                else
+                {
+                    // Absence reads as absence without needing a colour to say so.
+                    chips.Append("··");
+                }
+
+                chips.Append(' ');
+            }
+
+            return chips.ToString().TrimEnd() + "</size>";
+        }
+
+        /// <summary>
+        /// One line on whether the highlighted destination will take what you are holding, and how
+        /// many of the others would.
+        /// </summary>
+        private static string Verdict(PortalRecord destination)
+        {
+            if (_carrying == Clearance.None)
+            {
+                return "<size=13>Carrying nothing a portal would refuse.</size>";
+            }
+
+            int accepting = Candidates.Count(Accepts);
+            string tally = $"<size=13>{accepting} of {Candidates.Count} take your load.</size>";
+
+            return Accepts(destination)
+                ? $"<size=13><color=#8FC97A>This one takes your load.</color></size>  {tally}"
+                : $"<size=13><color=#E06C4A>This one would refuse you.</color></size>  {tally}";
+        }
+
+        private static bool Accepts(PortalRecord portal)
+        {
+            return ((Clearance)portal.ClearanceMask & _carrying) == _carrying;
+        }
+
+        /// <summary>
+        /// Which tiers the player is carrying something for.
+        /// <para>
+        /// Blocked items only — everything the game teleports happily needs no clearance, so a load of
+        /// wood and food answers <see cref="Clearance.None"/> and every destination reads as fine.
+        /// </para>
+        /// </summary>
+        private static Clearance CarriedTiers(Player player)
+        {
+            Clearance carried = Clearance.None;
+            Inventory inventory = player?.GetInventory();
+
+            if (inventory == null)
+            {
+                return carried;
+            }
+
+            foreach (ItemDrop.ItemData item in inventory.GetAllItems())
+            {
+                if (item?.m_shared == null || item.m_shared.m_teleportable)
+                {
+                    continue;
+                }
+
+                string prefab = item.m_dropPrefab != null ? item.m_dropPrefab.name : null;
+                carried |= TierMap.RequiredFor(prefab);
+            }
+
+            return carried;
         }
 
         /// <summary>
@@ -382,7 +578,7 @@ namespace Bindrune.UI
                 anchorMax: new Vector2(0.5f, 0.5f),
                 position: new Vector2(-600f, -60f),
                 width: 380f,
-                height: 470f);
+                height: 540f);
 
             GameObject text = GUIManager.Instance.CreateText(
                 text: string.Empty,
@@ -396,7 +592,7 @@ namespace Bindrune.UI
                 outline: true,
                 outlineColor: Color.black,
                 width: 340f,
-                height: 430f,
+                height: 500f,
                 addContentSizeFitter: false);
 
             _text = text.GetComponent<Text>();

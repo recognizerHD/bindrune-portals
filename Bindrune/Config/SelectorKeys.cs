@@ -74,6 +74,7 @@ namespace Bindrune.Config
         internal const string Next = "bindrune_next";
         internal const string Previous = "bindrune_previous";
         internal const string Sort = "bindrune_sort";
+        internal const string Filter = "bindrune_filter";
 
         internal static void Bind(ConfigFile config)
         {
@@ -96,6 +97,9 @@ namespace Bindrune.Config
             // avoids relying on input blocking to save us from a collision we chose.
             Register(config, Sort, "Cycle how the destination list is ordered.",
                 KeyCode.O, InputManager.GamepadButton.ButtonWest);
+
+            Register(config, Filter, "Show only destinations that will accept what you are carrying.",
+                KeyCode.K, InputManager.GamepadButton.ButtonNorth);
         }
 
         private static void Register(ConfigFile config, string name, string description,

@@ -101,6 +101,28 @@ namespace Bindrune.Tiers
         }
 
         /// <summary>
+        /// A two-letter chip for the selector, naming the <em>resource</em> rather than the boss.
+        /// <para>
+        /// Cu, Fe, Ag and Fl are what §5 asked for, and they work because a player scanning a list is
+        /// asking "can this take my iron", not "have I killed Bonemass". Dv stands for the dvergr
+        /// machinery the Mistlands blocks, which has no metal to be named after.
+        /// </para>
+        /// </summary>
+        internal static string Symbol(this Clearance tier)
+        {
+            switch (tier)
+            {
+                case Clearance.Elder: return "Cu";
+                case Clearance.Bonemass: return "Fe";
+                case Clearance.Moder: return "Ag";
+                case Clearance.Yagluth: return "Bm";
+                case Clearance.Queen: return "Dv";
+                case Clearance.Ashen: return "Fl";
+                default: return "--";
+            }
+        }
+
+        /// <summary>
         /// The bindrune a player would have to build, named as they would recognise it. Used in
         /// refusals, where naming the missing piece is the whole difference between R6 and vanilla's
         /// "you cannot teleport with that".
