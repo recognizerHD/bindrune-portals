@@ -103,11 +103,6 @@ Cargo checks happen on your own machine, because that is where your inventory is
 could bypass them. This is a rule system for playing with people you like, **not anti-cheat** — the
 server owns what each site permits, and never what you are carrying.
 
-## Building from source
-
-See **[BUILDING.md](BUILDING.md)**. The design and the reasoning behind it are in
-**[DESIGN.md](DESIGN.md)**.
-
 ## Licensing
 
 Code: **MIT** — see [LICENSE](LICENSE).
