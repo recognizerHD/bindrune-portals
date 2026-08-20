@@ -131,8 +131,11 @@ to the wrong place if you get it wrong.
 ```
 
 The version comes from `manifest.json`, which is the single source of truth; the script warns if
-`BuildInfo.cs` disagrees. `icon.png` is currently a placeholder and wants replacing before anything is
-published.
+`BuildInfo.cs` disagrees.
+
+`tools/Make-Icon.ps1` builds `icon.png` from a screenshot — centre-cropped to a square and downscaled
+to the 256×256 Thunderstore requires, with resampling chosen because thin bright details are exactly
+what glowing runes are and a naive downscale turns them to mush.
 
 ## Licensing
 
