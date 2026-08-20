@@ -59,6 +59,7 @@ namespace Bindrune.Config
         private const string SectionClearance = "2 - Clearance";
         private const string SectionCargoPreview = "3 - Cargo preview";
         private const string SectionCompatibility = "4 - Compatibility";
+        private const string SectionTransit = "5 - Transit";
         private const string SectionDiagnostics = "6 - Diagnostics";
 
         // -- Travel ----------------------------------------------------------------------------
@@ -104,6 +105,11 @@ namespace Bindrune.Config
         internal static ConfigEntry<bool> ShowBlockedCargoOverlay { get; private set; }
         internal static ConfigEntry<bool> WarnOnApproach { get; private set; }
         internal static ConfigEntry<float> CargoPreviewRange { get; private set; }
+
+        // -- Transit -----------------------------------------------------------------------------
+
+        internal static ConfigEntry<bool> SeamlessTransit { get; private set; }
+        internal static ConfigEntry<float> TransitPause { get; private set; }
 
         // -- Compatibility ---------------------------------------------------------------------
 
@@ -226,6 +232,29 @@ namespace Bindrune.Config
                                       "showing it everywhere would paint your ore red all game and teach you " +
                                       "to ignore it. Local to you.",
                     new AcceptableValueRange<float>(2f, 32f)));
+
+            // -- Transit -------------------------------------------------------------------------
+
+            SeamlessTransit = config.Bind(
+                SectionTransit,
+                "SeamlessTransit",
+                false,
+                new ConfigDescription("End a portal trip when the destination has actually loaded, " +
+                                      "rather than on vanilla's eight-second timer. A destination " +
+                                      "already in memory skips the loading screen entirely; one that " +
+                                      "is not shows it for exactly as long as loading takes. Loads " +
+                                      "nothing early and waits for the same condition vanilla does. " +
+                                      "Local to you."));
+
+            TransitPause = config.Bind(
+                SectionTransit,
+                "TransitPause",
+                0.5f,
+                new ConfigDescription("Seconds to hold before moving you on a trip that needs no " +
+                                      "loading, in place of vanilla's two. Kept rather than removed " +
+                                      "because arriving in another biome with no beat at all is " +
+                                      "disorienting. Local to you.",
+                    new AcceptableValueRange<float>(0f, 2f)));
 
             // -- Compatibility -----------------------------------------------------------------
 

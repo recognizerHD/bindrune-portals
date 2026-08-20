@@ -317,8 +317,18 @@ namespace Bindrune.Bindrunes
             Piece piece = prefab.GetComponent<Piece>() ?? prefab.AddComponent<Piece>();
             piece.m_canBeRemoved = true;
             piece.m_canRotate = true;
-            piece.m_groundPiece = true;
             piece.m_allowedInDungeons = false;
+
+            // Placeable on anything: terrain, a stone floor, a wooden deck. m_groundPiece and
+            // m_groundOnly are both read by UpdatePlacementGhost, and setting the first was enough to
+            // make every surface that was not raw terrain read as an invalid placement.
+            //
+            // There is no reason for a bindrune to insist on soil. A site is often a built-up base
+            // with a paved floor, and telling a player they may not put a rune on their own hall is
+            // a rule with nothing behind it.
+            piece.m_groundPiece = false;
+            piece.m_groundOnly = false;
+            piece.m_noInWater = true;
 
             if (prefab.GetComponent<WearNTear>() != null)
             {

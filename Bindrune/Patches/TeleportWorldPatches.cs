@@ -155,7 +155,13 @@ namespace Bindrune.Patches
             Quaternion rotation = destination.GetRotation();
             Vector3 exit = position + rotation * Vector3.forward * __instance.m_exitDistance + Vector3.up;
 
-            player.TeleportTo(exit, rotation, true);
+            // A destination already in memory has nothing to wait for, so it gets no loading screen.
+            // Anything else is treated as distant exactly as vanilla would (DESIGN.md §7).
+            bool distant = SeamlessTransit.NeedsLoadingScreen(exit);
+
+            player.TeleportTo(exit, rotation, distant);
+            SeamlessTransit.ShortenPause(player, exit);
+
             Game.instance?.IncrementPlayerStat(PlayerStatType.PortalsUsed, 1f);
             return false;
         }
