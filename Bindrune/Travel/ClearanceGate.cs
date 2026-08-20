@@ -1,3 +1,4 @@
+using Bindrune.Config;
 using System.Collections.Generic;
 using Bindrune.Portals;
 using Bindrune.Tiers;
@@ -163,16 +164,21 @@ namespace Bindrune.Travel
         internal static string Explain(Refusal refusal, string destinationName)
         {
             string place = string.IsNullOrEmpty(destinationName)
-                ? "that portal"
+                ? Translations.Get(Translations.ThatPortal)
                 : $"\"{destinationName}\"";
 
-            var message = $"{refusal.Item} cannot enter {place} — no {refusal.Missing.BindruneName()} there.";
+            string message = Translations.Format(
+                Translations.Refusal, refusal.Item, place, refusal.Missing.BindruneName());
 
             if (refusal.OtherStacks > 0)
             {
                 // A count rather than a list: naming twelve stacks in a HUD message helps nobody, and
                 // the player only needs to know that fixing this one will not be the end of it.
-                message += $" ({refusal.OtherStacks} other stack{(refusal.OtherStacks == 1 ? string.Empty : "s")} too.)";
+                //
+                // Phrased so it needs no plural form. English would want "stack" and "stacks", and
+                // languages with three or six plural classes would want more than a translator should
+                // have to encode in one token.
+                message += Translations.Format(Translations.RefusalMore, refusal.OtherStacks);
             }
 
             return message;

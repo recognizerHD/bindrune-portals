@@ -279,26 +279,26 @@ namespace Bindrune.Bindrunes
         {
             if (InRange.Count == 0)
             {
-                return "No portal in range — this bindrune would do nothing here.";
+                return Translations.Get(Translations.PlaceNoPortal);
             }
 
             if (all)
             {
                 return InRange.Count == 1
-                    ? $"Binds to {Name(InRange[0])}."
-                    : $"Binds to all {InRange.Count} portals in range.";
+                    ? Translations.Format(Translations.PlaceBinds, Name(InRange[0]))
+                    : Translations.Format(Translations.PlaceBindsAll, InRange.Count);
             }
 
             return InRange.Count == 1
-                ? $"Binds to {Name(InRange[0])}."
-                : $"Binds to {Name(InRange[0])}, the nearest of {InRange.Count} in range.";
+                ? Translations.Format(Translations.PlaceBinds, Name(InRange[0]))
+                : Translations.Format(Translations.PlaceBindsNearest, Name(InRange[0]), InRange.Count);
         }
 
         private static string Name(TeleportWorld portal)
         {
             ZDO zdo = PortalTarget.ZdoOf(portal);
             string tag = zdo != null ? zdo.GetString(ZDOVars.s_tag, string.Empty) : string.Empty;
-            return string.IsNullOrEmpty(tag) ? "an unnamed portal" : $"\"{tag}\"";
+            return string.IsNullOrEmpty(tag) ? Translations.Get(Translations.AnUnnamedPortal) : $"\"{tag}\"";
         }
     }
 }

@@ -1,3 +1,4 @@
+using Bindrune.Config;
 using System;
 
 namespace Bindrune.Tiers
@@ -127,17 +128,20 @@ namespace Bindrune.Tiers
         /// refusals, where naming the missing piece is the whole difference between R6 and vanilla's
         /// "you cannot teleport with that".
         /// </summary>
-        internal static string BindruneName(this Clearance tier)
+        internal static string BindruneName(this Clearance tier) => Translations.Get(NameToken(tier));
+
+        /// <summary>The localisation token for a tier's piece name, shared by the piece and the refusal.</summary>
+        internal static string NameToken(this Clearance tier)
         {
             switch (tier)
             {
-                case Clearance.Elder: return "Elder's Bindrune";
-                case Clearance.Bonemass: return "Bonemass's Bindrune";
-                case Clearance.Moder: return "Moder's Bindrune";
-                case Clearance.Yagluth: return "Yagluth's Bindrune";
-                case Clearance.Queen: return "Queen's Bindrune";
-                case Clearance.Ashen: return "Ashen Bindrune";
-                default: return "no bindrune";
+                case Clearance.Elder: return Translations.RuneElder;
+                case Clearance.Bonemass: return Translations.RuneBonemass;
+                case Clearance.Moder: return Translations.RuneModer;
+                case Clearance.Yagluth: return Translations.RuneYagluth;
+                case Clearance.Queen: return Translations.RuneQueen;
+                case Clearance.Ashen: return Translations.RuneAshen;
+                default: return Translations.NoBindrune;
             }
         }
     }

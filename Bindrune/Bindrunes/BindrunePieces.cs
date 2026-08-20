@@ -1,3 +1,4 @@
+using Bindrune.Config;
 using System;
 using System.Collections.Generic;
 using Bindrune.Tiers;
@@ -52,8 +53,8 @@ namespace Bindrune.Bindrunes
             new PieceSpec
             {
                 Name = "bindrune_elder",
-                Display = "Elder's Bindrune",
-                Description = "Lets copper, tin and bronze arrive at this site.",
+                Display = Translations.RuneElder,
+                Description = Translations.DescElder,
                 // Yellow, for the brass-and-bronze end of the Black Forest rather than its trees.
                 Tint = new Color(0.95f, 0.80f, 0.15f),
                 Requirements = new[]
@@ -68,8 +69,8 @@ namespace Bindrune.Bindrunes
             new PieceSpec
             {
                 Name = "bindrune_bonemass",
-                Display = "Bonemass's Bindrune",
-                Description = "Lets iron arrive at this site.",
+                Display = Translations.RuneBonemass,
+                Description = Translations.DescBonemass,
                 // The green the Elder used to wear, which suits a swamp far better than a forest.
                 Tint = new Color(0.25f, 0.85f, 0.30f),
                 Requirements = new[]
@@ -82,8 +83,8 @@ namespace Bindrune.Bindrunes
             new PieceSpec
             {
                 Name = "bindrune_moder",
-                Display = "Moder's Bindrune",
-                Description = "Lets silver and dragon eggs arrive at this site.",
+                Display = Translations.RuneModer,
+                Description = Translations.DescModer,
                 Tint = new Color(0.75f, 0.85f, 1.00f),
                 Requirements = new[]
                 {
@@ -95,8 +96,8 @@ namespace Bindrune.Bindrunes
             new PieceSpec
             {
                 Name = "bindrune_yagluth",
-                Display = "Yagluth's Bindrune",
-                Description = "Lets black metal arrive at this site.",
+                Display = Translations.RuneYagluth,
+                Description = Translations.DescYagluth,
                 Tint = new Color(0.45f, 0.15f, 0.65f),
                 Requirements = new[]
                 {
@@ -108,8 +109,8 @@ namespace Bindrune.Bindrunes
             new PieceSpec
             {
                 Name = "bindrune_queen",
-                Display = "Queen's Bindrune",
-                Description = "Lets the Mistlands' guarded things arrive at this site.",
+                Display = Translations.RuneQueen,
+                Description = Translations.DescQueen,
                 // Cyan-white, the colour of wisplight and eitr rather than of a metal - the Mistlands
                 // has no ore, and pretending otherwise would make this rune look like a sixth smelter.
                 Tint = new Color(0.40f, 0.95f, 0.95f),
@@ -126,8 +127,8 @@ namespace Bindrune.Bindrunes
             new PieceSpec
             {
                 Name = "bindrune_ashen",
-                Display = "Ashen Bindrune",
-                Description = "Lets flametal and the Ashlands' spoils arrive at this site.",
+                Display = Translations.RuneAshen,
+                Description = Translations.DescAshen,
                 Tint = new Color(1.00f, 0.35f, 0.10f),
                 Requirements = new[]
                 {
@@ -190,7 +191,7 @@ namespace Bindrune.Bindrunes
                 catch (Exception exception)
                 {
                     // One bad piece should not cost the other five.
-                    Jotunn.Logger.LogError($"Could not create {spec.Display}: {exception}");
+                    Jotunn.Logger.LogError($"Could not create {spec.Name}: {exception}");
                 }
             }
         }
@@ -211,7 +212,7 @@ namespace Bindrune.Bindrunes
                 if (PrefabManager.Instance.GetPrefab(requirement.Item) == null)
                 {
                     Jotunn.Logger.LogError(
-                        $"{spec.Display} needs '{requirement.Item}', which does not exist. That piece " +
+                        $"{spec.Name} needs '{requirement.Item}', which does not exist. That piece " +
                         "will be unbuildable until the name is corrected - try bindrune_prefabs to find it.");
                 }
             }
@@ -227,7 +228,7 @@ namespace Bindrune.Bindrunes
             GameObject prefab = PrefabManager.Instance.CreateClonedPrefab(spec.Name, CloneSource);
             if (prefab == null)
             {
-                Jotunn.Logger.LogError($"Could not clone {CloneSource} for {spec.Display}.");
+                Jotunn.Logger.LogError($"Could not clone {CloneSource} for {spec.Name}.");
                 return;
             }
 
@@ -241,26 +242,28 @@ namespace Bindrune.Bindrunes
             }
 
             MakeBuildable(prefab);
-            CoreTint.Apply(prefab, spec.Tint, spec.Display);
+            CoreTint.Apply(prefab, spec.Tint, spec.Name);
 
             var piece = new CustomPiece(prefab, fixReference: false, new PieceConfig
             {
-                Name = spec.Display,
-                Description = spec.Description,
+                // Tokens, not text: Jotunn localises a PieceConfig name beginning with $, so the
+                // build menu shows these in the player's language rather than in mine.
+                Name = $"${spec.Display}",
+                Description = $"${spec.Description}",
                 PieceTable = PieceTables.Hammer,
                 Category = "Misc",
-                Icon = RenderIcon(prefab, spec.Display),
+                Icon = RenderIcon(prefab, spec.Name),
                 Requirements = spec.Requirements,
             });
 
             if (!piece.IsValid())
             {
-                Jotunn.Logger.LogError($"{spec.Display} did not come out valid and will not be registered.");
+                Jotunn.Logger.LogError($"{spec.Name} did not come out valid and will not be registered.");
                 return;
             }
 
             PieceManager.Instance.AddPiece(piece);
-            Jotunn.Logger.LogInfo($"Registered piece {spec.Display} ({spec.Name}).");
+            Jotunn.Logger.LogInfo($"Registered piece {spec.Name}.");
         }
 
         /// <summary>

@@ -111,7 +111,7 @@ namespace Bindrune.UI
 
             if (Candidates.Count == 0)
             {
-                who?.Message(MessageHud.MessageType.Center, "There is nowhere else to point this portal.");
+                who?.Message(MessageHud.MessageType.Center, Translations.Get(Translations.SelectorNowhere));
                 return;
             }
 
@@ -291,7 +291,7 @@ namespace Bindrune.UI
 
             Player.m_localPlayer?.Message(
                 MessageHud.MessageType.Center,
-                $"{_sourceName} now points at {Describe(destination)}.");
+                Translations.Format(Translations.SelectorAimed, _sourceName, Describe(destination)));
 
             Close();
         }
@@ -369,12 +369,12 @@ namespace Bindrune.UI
                 // Only reachable with the cargo filter on: there are destinations, just none that
                 // would take what you are holding. Saying so beats an empty box.
                 var empty = new StringBuilder();
-                empty.AppendLine($"Aim {_sourceName} at");
+                empty.AppendLine(Translations.Format(Translations.SelectorTitle, _sourceName));
                 empty.AppendLine();
-                empty.AppendLine("<color=#E06C4A>Nothing here will take what you are carrying.</color>");
+                empty.AppendLine($"<color=#E06C4A>{Translations.Get(Translations.SelectorEmpty)}</color>");
                 empty.AppendLine();
-                empty.Append($"<size=13>[{Bound(SelectorKeys.Filter)}] show everything   " +
-                             $"[{Bound(SelectorKeys.Cancel)}] cancel</size>");
+                empty.Append($"<size=13>[{Bound(SelectorKeys.Filter)}] {Translations.Get(Translations.SelectorShowAll)}   " +
+                             $"[{Bound(SelectorKeys.Cancel)}] {Translations.Get(Translations.Cancel)}</size>");
 
                 SetPanelText(empty.ToString());
                 return;
@@ -386,9 +386,12 @@ namespace Bindrune.UI
             Minimap.instance?.ShowPointOnMap(destination.Position);
 
             var panel = new StringBuilder();
-            panel.AppendLine($"Aim {_sourceName} at");
-            panel.AppendLine($"<size=13>by {(_order == SortOrder.Distance ? "distance" : "name")}" +
-                             $"{(_onlyWhatAcceptsMyCargo ? ", only what takes my load" : string.Empty)}</size>");
+            panel.AppendLine(Translations.Format(Translations.SelectorTitle, _sourceName));
+            string ordering = Translations.Get(_order == SortOrder.Distance
+                ? Translations.SelectorByDistance
+                : Translations.SelectorByName);
+            string filtered = _onlyWhatAcceptsMyCargo ? Translations.Get(Translations.SelectorFiltered) : string.Empty;
+            panel.AppendLine($"<size=13>{ordering}{filtered}</size>");
             panel.AppendLine(Verdict(destination));
             panel.AppendLine();
 
@@ -397,7 +400,7 @@ namespace Bindrune.UI
             int first = Mathf.Clamp(_highlight - VisibleRows / 2, 0, Mathf.Max(0, Candidates.Count - VisibleRows));
             int last = Mathf.Min(first + VisibleRows, Candidates.Count);
 
-            panel.AppendLine(first > 0 ? $"<size=13>{first} more above</size>" : " ");
+            panel.AppendLine(first > 0 ? $"<size=13>{Translations.Format(Translations.SelectorMoreAbove, first)}</size>" : " ");
 
             for (int i = first; i < last; i++)
             {
@@ -412,15 +415,17 @@ namespace Bindrune.UI
                     : $"<color=#C9C0AC>   {line}</color>");
             }
 
-            panel.AppendLine(last < Candidates.Count ? $"<size=13>{Candidates.Count - last} more below</size>" : " ");
+            panel.AppendLine(last < Candidates.Count ? $"<size=13>{Translations.Format(Translations.SelectorMoreBelow, Candidates.Count - last)}</size>" : " ");
             panel.AppendLine();
             // Confirm and cancel first. The footer sits at the bottom of a fixed-height text box, so
             // if anything is ever clipped it should be the line you can do without — and losing the
             // two keys that commit or escape a modal panel is the worst possible thing to lose.
-            panel.AppendLine($"<size=13>[{Bound(SelectorKeys.Confirm)}] confirm   " +
-                             $"[{Bound(SelectorKeys.Cancel)}] cancel</size>");
-            panel.Append($"<size=13>[{Bound(SelectorKeys.Previous)} / {Bound(SelectorKeys.Next)}] change   " +
-                         $"[{Bound(SelectorKeys.Sort)}] sort   [{Bound(SelectorKeys.Filter)}] filter</size>");
+            panel.AppendLine($"<size=13>[{Bound(SelectorKeys.Confirm)}] {Translations.Get(Translations.Confirm)}   " +
+                             $"[{Bound(SelectorKeys.Cancel)}] {Translations.Get(Translations.Cancel)}</size>");
+            panel.Append($"<size=13>[{Bound(SelectorKeys.Previous)} / {Bound(SelectorKeys.Next)}] " +
+                         $"{Translations.Get(Translations.Change)}   " +
+                         $"[{Bound(SelectorKeys.Sort)}] {Translations.Get(Translations.Sort)}   " +
+                         $"[{Bound(SelectorKeys.Filter)}] {Translations.Get(Translations.Filter)}</size>");
 
             SetPanelText(panel.ToString());
         }
@@ -499,15 +504,15 @@ namespace Bindrune.UI
         {
             if (_carrying == Clearance.None)
             {
-                return "<size=13>Carrying nothing a portal would refuse.</size>";
+                return $"<size=13>{Translations.Get(Translations.SelectorCarryingNothing)}</size>";
             }
 
             int accepting = Candidates.Count(Accepts);
-            string tally = $"<size=13>{accepting} of {Candidates.Count} take your load.</size>";
+            string tally = $"<size=13>{Translations.Format(Translations.SelectorTally, accepting, Candidates.Count)}</size>";
 
             return Accepts(destination)
-                ? $"<size=13><color=#8FC97A>This one takes your load.</color></size>  {tally}"
-                : $"<size=13><color=#E06C4A>This one would refuse you.</color></size>  {tally}";
+                ? $"<size=13><color=#8FC97A>{Translations.Get(Translations.SelectorTakes)}</color></size>  {tally}"
+                : $"<size=13><color=#E06C4A>{Translations.Get(Translations.SelectorRefuses)}</color></size>  {tally}";
         }
 
         private static bool Accepts(PortalRecord portal)
@@ -559,10 +564,10 @@ namespace Bindrune.UI
         {
             if (BindruneConfig.HidePortalNames.Value)
             {
-                return $"portal at {portal.Position.x:F0}, {portal.Position.z:F0}";
+                return Translations.Format(Translations.PortalAt, portal.Position.x.ToString("F0"), portal.Position.z.ToString("F0"));
             }
 
-            return string.IsNullOrEmpty(portal.Name) ? "unnamed portal" : portal.Name;
+            return string.IsNullOrEmpty(portal.Name) ? Translations.Get(Translations.UnnamedPortal) : portal.Name;
         }
 
         private static void BuildPanel()

@@ -1,3 +1,4 @@
+using Bindrune.Config;
 using Bindrune.Portals;
 using Bindrune.Travel;
 using Bindrune.UI;
@@ -95,7 +96,7 @@ namespace Bindrune.Patches
             {
                 if (targetPid != PortalTarget.NoPid)
                 {
-                    player.Message(MessageHud.MessageType.Center, "This portal points at somewhere that no longer exists.");
+                    player.Message(MessageHud.MessageType.Center, Translations.Get(Translations.TargetGone));
                     return false;
                 }
 
@@ -130,7 +131,7 @@ namespace Bindrune.Patches
                     ZDOMan.instance?.RequestZDO(pending.Id);
                 }
 
-                player.Message(MessageHud.MessageType.Center, "The far side has not answered yet.");
+                player.Message(MessageHud.MessageType.Center, Translations.Get(Translations.FarSideWaiting));
                 return false;
             }
 
@@ -218,7 +219,7 @@ namespace Bindrune.Patches
                 alt = Localization.instance.Localize("$KEY_AltPlace");
             }
 
-            __result = __result.Replace(settag, Localization.instance.Localize("$bindrune_hover_aim"))
+            __result = __result.Replace(settag, Translations.Get(Translations.HoverAim))
                        + $"\n[<color=yellow><b>{alt}+{use}</b></color>] {settag}";
         }
 

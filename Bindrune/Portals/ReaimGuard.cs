@@ -28,7 +28,7 @@ namespace Bindrune.Portals
                 case ReaimPermission.Admin:
                     if (!SynchronizationManager.Instance.PlayerIsAdmin)
                     {
-                        refusal = "Only an admin may re-aim portals on this server.";
+                        refusal = Translations.Get(Translations.ReaimAdminOnly);
                         return false;
                     }
 
